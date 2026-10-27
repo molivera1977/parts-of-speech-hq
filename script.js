@@ -1593,6 +1593,7 @@ const app = {
     this.questionLocked = false;   // a save during the cards must not skip the first question
     document.getElementById('quiz-screen').classList.add('card-mode');
     this._applyCompLayout(false);
+    ['q-before', 'q-show', 'q-after'].forEach(id => { document.getElementById(id).innerHTML = ''; });   // nothing left from the last screen
     this._renderCard();
   },
 
@@ -2341,7 +2342,7 @@ const app = {
     const L = this.level || 1;
     if (L !== LEVELS[LEVELS.length - 1]) return false;
     if (reviewMode) return this.currentBank.length > 0 && this.score / this.currentBank.length * 100 >= passPct(L);
-    return !this._passedBefore && passed(this.studentName, this.currentSection, L);
+    return !this._passedBefore && partDone(this.studentName, this.currentSection);
   },
 
   // "▶ Next": the next step in the class's order (see FLOW)
