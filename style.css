@@ -774,7 +774,8 @@ body.comp-active .container { max-width: 1160px; }
 body { font-family: var(--font-ui); }
 .rp-say, h2#question-text, button.answer-btn, .feedback-box, .dir-text, .welcome-hero-text,
 .lc-title, .missed-item, .sp-para .rp-say { font-family: var(--font-read); }
-h1 { font-size: 2rem; }
+h1 { font-size: 3rem; line-height: 1.15; }   /* Marcos 10/27: "let's make title larger" */
+@media (max-width: 600px) { h1 { font-size: 2.1rem; } }
 .welcome-sub { font-size: 1.05rem; color: #666; }
 h2#question-text { font-size: 1.4rem; line-height: 1.6; }
 button.answer-btn { font-size: 1.2rem; }
