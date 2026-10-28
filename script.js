@@ -2167,10 +2167,11 @@ const app = {
     fb.style.display = 'block';
     fb.innerHTML = this._answerHTML(q, correct, pickIdx);
 
-    // After a miss the student must HEAR why before Next shows
+    // The explanation reads itself after EVERY answer, right or wrong, and Next waits until it has been heard
+    // (Marcos 10/28: "explanation should read itself" — a Level 1 reader cannot read the why in the 6 s pause)
     const fbSpeak = fb.querySelector('.rp-fb .rp-speak');
     const fbSpans = blockSpans(fb.querySelector('.fb-text'));
-    this.mustHear = !correct && !reviewMode;
+    this.mustHear = !reviewMode;
     if (this.mustHear) this._armListen(fb.querySelector('.rp-fb'), fbSpeak, fbSpans, spokenOf(fbSpans), q.id);
 
     document.getElementById('confirm-btn').classList.add('hidden');
