@@ -18,9 +18,10 @@ function syl(w) { w = w.toLowerCase().replace(/[^a-z]/g, ''); if (!w) return 0; 
   w = w.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '').replace(/^y/, ''); const m = w.match(/[aeiouy]{1,2}/g); return m ? m.length : 1; }
 // The words being taught (and a quoted word under study) are heard and taught, so they count
 // as one short word: "An adjective describes a noun" is the lesson, not reading load.
-const TERMS = /\b(nouns?|verbs?|adjectives?|adverbs?|describ(e|es|ed)|persons?|places?|things?|ideas?|actions?|sentences?|speech)\b/gi;
+const TERMS = /\b(nouns?|verbs?|adjectives?|adverbs?|describ(e|es|ed)|persons?|places?|things?|ideas?|actions?|sentences?|speech|common|proper|capital)\b/gi;
 function fk(t) {
-  t = String(t).replace(/“[^”]*”/g, 'word').replace(TERMS, 'word').replace(/[“”"]/g, '').replace(/___/g, 'blank');
+  // a name inside a sentence (Bridgeport, Maria) is heard, not decoded: one short word too
+  t = String(t).replace(/“[^”]*”/g, 'word').replace(TERMS, 'word').replace(/(\S\s+)[A-Z][a-z]+/g, '$1word').replace(/[“”"]/g, '').replace(/___/g, 'blank');
   const s = Math.max(1, t.split(/[.!?…]+/).filter(x => /[A-Za-z]/.test(x)).length);
   const words = t.split(/\s+/).filter(x => /[A-Za-z0-9]/.test(x));
   if (!words.length) return 0;
@@ -340,7 +341,7 @@ function check(W, only) {
       const stage = set[st.key];
       if (!stage) { bad(where, 'missing'); return; }
       const [nv, nq] = (part.key === 'all' ? ALL_SIZE : SIZE)[st.key];
-      cardRules(where, stage.cards, part.key, st.key === 'learn' ? (part.key === 'all' ? 3 : 4) : 1, st.key === 'learn' ? 7 : 1);
+      cardRules(where, stage.cards, part.key, st.key === 'learn' ? (part.key === 'all' ? 3 : 4) : 1, st.key === 'learn' ? 8 : 1);
       const versions = stage.versions || [];
       if (versions.length !== nv) bad(where, `needs ${nv} version(s) (has ${versions.length})`);
       versions.forEach((items, vi) => {

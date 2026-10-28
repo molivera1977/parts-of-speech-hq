@@ -24,10 +24,17 @@ window.POS_SETS.noun = {
         { p: 'A name is a noun too. Maya, Luis, and Ana are nouns.' },
         { sent: 'Maya helped the teacher.', tags: 'n v x n', show: 'n', say: 'Maya is a person. A teacher is a person.' }
       ] },
+      { title: 'Common and Proper Nouns', blocks: [
+        { term: 'common noun', means: 'a word for any person, place, or thing: girl, city, school' },
+        { term: 'proper noun', means: 'the name of one special person, place, or thing: Maria, Bridgeport' },
+        { p: 'A proper noun starts with a capital letter.' },
+        { sent: 'Maria lives in Bridgeport.', tags: 'n v x n', show: 'n', say: 'Maria and Bridgeport are proper nouns.' },
+        { tip: 'Names are nouns too, just like girl and city.' }
+      ] },
       { title: 'A Noun Can Name a Place', blocks: [
         { p: 'A place is where you can go.' },
         { words: ['school', 'park', 'library', 'beach', 'kitchen', 'Bridgeport'], tag: 'n' },
-        { p: 'The name of a city is a noun too. Bridgeport is a place.' },
+        { p: 'Bridgeport is a proper noun. Bridgeport names a city.' },
         { sent: 'Leo swam at the beach.', tags: 'n v x x n', show: 'n', say: 'A beach is a place.' }
       ] },
       { title: 'A Noun Can Name a Thing', blocks: [
@@ -82,6 +89,7 @@ window.POS_SETS.noun = {
       { title: 'Remember: Nouns', blocks: [
         { p: 'A noun names a person, place, thing, or idea.' },
         { words: ['sister', 'beach', 'pencil', 'joy'], tag: 'n' },
+        { p: 'A name is a proper noun. A proper noun starts with a capital letter.' },
         { tip: 'Ask: Does the word name a person, place, thing, or idea?' },
         { tip: 'A noun often comes after a, an, or the.' }
       ] }
@@ -145,6 +153,7 @@ window.POS_SETS.noun = {
       { title: 'Remember: Nouns', blocks: [
         { p: 'A noun names a person, place, thing, or idea.' },
         { words: ['nurse', 'gym', 'blanket', 'kindness'], tag: 'n' },
+        { p: 'A name is a proper noun. A proper noun starts with a capital letter.' },
         { tip: 'Ask: Does the word name a person, place, thing, or idea?' },
         { tip: 'A noun often comes after a, an, or the.' }
       ] }
