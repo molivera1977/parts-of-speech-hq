@@ -22,7 +22,7 @@
 /* ── CONFIG ─────────────────────────────────────────── */
 const REVIEW_OPEN   = true;      // built 10/27, OPEN 10/28 (Marcos: "open"). false = students locked out; only Teacher Access works.
 const SHARE_MODE    = !!window.SHARE_MODE;   // set by share.js — a visitor's link, never a student's
-const INSTRUCT_SECS = 20;
+const INSTRUCT_SECS = 15;
 const READ_SECS     = 8;         // one short sentence a question: 8 s to read the question, the sentence, and the choices
 const NEXT_SECS     = 6;
 const STORAGE_KEY   = 'pos_session_v1';
@@ -1510,7 +1510,7 @@ const app = {
     if (el) el.textContent = `${m}:${s}`;
   },
 
-  /* ── INSTRUCTIONS LOCK (20s) ── */
+  /* ── INSTRUCTIONS LOCK (15s) ── */
   startInstructionsTimer() {
     if (this.instructInterval) { clearInterval(this.instructInterval); this.instructInterval = null; }
     const btn   = document.getElementById('ready-btn');
