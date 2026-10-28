@@ -314,6 +314,8 @@ h1 {
 .timer-dir h3 { color: #4a7a1f; }
 .story-dir   { background: #fff1e6; border-color: #f5a66b; }
 .story-dir h3 { color: #b4510f; }
+.tap-dir     { background: #f3eafa; border-color: #c9a6e0; }   /* the box this site added had no colors (Marcos 10/28) */
+.tap-dir h3   { color: #6a2f8f; }
 
 .timer-chip {
   display: inline-block;
