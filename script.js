@@ -657,7 +657,16 @@ function blockSpans(el) {
   return Array.from(el.querySelectorAll('.wrd')).filter(sp => /[A-Za-z0-9]|^_{2,}[.!?,]?$/.test(sp.textContent));
 }
 function spokenOf(spans) {
-  return spans.map(s => s.textContent.replace(/[…]/g, '').replace(/_{2,}/g, 'blank')).join(' ');
+  return spans.map((s, i) => {
+    let t = s.textContent.replace(/[…]/g, '').replace(/_{2,}/g, 'blank');
+    // a word in a box (an example tile) is said on its own with a stop after it — "Dad. Library. Pencil." —
+    // not run into the next box like a sentence (Marcos 10/28: "It should not sound like a sentence")
+    const tile = s.closest && s.closest('.pos-wordtile');
+    if (tile && (!spans[i + 1] || spans[i + 1].closest('.pos-wordtile') !== tile) && !/[.!?]$/.test(t)) {
+      t = t.charAt(0).toUpperCase() + t.slice(1) + '.';
+    }
+    return t;
+  }).join(' ');
 }
 function speakEl(btn, el) {
   if (activeSpeakBtn === btn) { stopActiveSpeech(); return; }
