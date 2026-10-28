@@ -1736,10 +1736,15 @@ const app = {
     this._cardLast = last;
     this.saveProgress();
     if (reviewMode) { this._openCardNext(); if (reviewAutoRun) setTimeout(() => this.nextCard(), 500); return; }
-    // The button opens when the voice finishes the card. A device that never says
-    // so (or has no voice) gets it after a wait long enough to read the card.
+    // The button opens when the voice finishes the card. Only a device with NO voice (nothing started within
+    // 4 s) gets it after a wait long enough to read the card: the reading-time timer used to run even while the
+    // voice was still reading, and opened Next before the last lines of a long card were heard (found 10/28).
     const words = Array.from(box.querySelectorAll('.rp-say')).reduce((n, el) => n + el.textContent.split(/\s+/).filter(w => /[A-Za-z0-9]/.test(w)).length, 0);
-    this._cardUnlock = setTimeout(() => this._openCardNext(), Math.min(40000, Math.max(10000, words * 450)));
+    this._cardVoiceStarted = false;
+    this._cardUnlock = setTimeout(() => {
+      if (this._cardVoiceStarted) return;
+      this._cardUnlock = setTimeout(() => this._openCardNext(), Math.max(0, Math.min(40000, Math.max(10000, words * 450)) - LISTEN_START_WAIT));
+    }, LISTEN_START_WAIT);
     this._cardSpeak = setTimeout(() => this.speakCard(), 250);
   },
 
@@ -1764,13 +1769,19 @@ const app = {
     if (!lines.length) { this._openCardNext(); return; }
     activeSpeakBtn = btn; btn.textContent = '⏹';
     const sayLine = k => {
-      if (activeSpeakBtn !== btn) return;
+      if (activeSpeakBtn !== btn) {   // stopped before the end: Next stays shut until the whole card is heard
+        const note = document.getElementById('lc-note');
+        const next = document.getElementById('lc-next');
+        if (note && next && next.disabled) note.textContent = '👆 Tap 🔊 at the top to hear the whole card. Then the Next button opens.';
+        return;
+      }
       if (k >= lines.length) { btn.textContent = '🔊'; activeSpeakBtn = null; this._openCardNext(); return; }
       const spans = lines[k];
       let text = spokenOf(spans);
       if (!/[.!?:,]["”’]?$/.test(text)) text += '.';
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'en-US'; u.rate = 0.82;
+      u.lang = 'en-US'; u.rate = READ_RATE;
+      u.onstart = () => { this._cardVoiceStarted = true; };
       u.onboundary = e => {
         if (e.name !== 'word') return;
         box.querySelectorAll('.wrd.hl').forEach(el => el.classList.remove('hl'));
