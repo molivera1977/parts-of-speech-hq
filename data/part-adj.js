@@ -46,7 +46,7 @@ window.POS_SETS.adj = {
       { title: 'An Adjective Can Tell How Many', blocks: [
         { p: 'Some adjectives tell how many.' },
         { words: ['two', 'three', 'ten', 'several', 'many'], tag: 'adj' },
-        { p: 'A number tells how many. “Several” and “many” tell how many, too.' },
+        { p: 'Numbers like two and ten are adjectives. So are “several” and “many.”' },
         { sent: 'Three ducks ate several crumbs.', tags: 'adj n v adj n', show: ['adj', 'n'],
           say: 'How many ducks? Three. How many crumbs? Several.' },
         { sent: 'Many frogs hopped onto two logs.', tags: 'adj n v x adj n', show: ['adj', 'n'],
