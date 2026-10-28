@@ -25,7 +25,7 @@ window.POS_SETS.adj = {
         { p: 'Describe a frog: green, small, wet.' },
         { tip: 'To describe a thing, tell what the thing is like.' }
       ] },
-      { title: 'An Adjective Describes a Noun', blocks: [
+      { title: 'Meet the Adjective', blocks: [
         { term: 'adjective', means: 'a word that describes a noun', ex: 'Soft, green, and sweet are adjectives.' },
         { sent: 'The fluffy puppy chewed a red ball.', tags: 'x adj n v x adj n', show: ['adj', 'n'],
           say: '“Fluffy” describes the puppy. “Red” describes the ball.' },
@@ -35,7 +35,6 @@ window.POS_SETS.adj = {
         { p: 'An adjective often comes just before the noun.' }
       ] },
       { title: 'An Adjective Can Tell What Kind', blocks: [
-        { p: 'Many adjectives tell what kind.' },
         { words: ['red', 'tiny', 'soft', 'sweet', 'muddy'], tag: 'adj' },
         { p: '“Red” tells a color. “Tiny” tells a size.' },
         { p: '“Soft” tells what a thing feels like. “Sweet” tells what a food tastes like.' },
@@ -44,7 +43,6 @@ window.POS_SETS.adj = {
           say: 'What kind of mouse? Tiny. What kind of cheese? Sweet.' }
       ] },
       { title: 'An Adjective Can Tell How Many', blocks: [
-        { p: 'Some adjectives tell how many.' },
         { words: ['two', 'three', 'ten', 'several', 'many'], tag: 'adj' },
         { p: 'Numbers like two and ten are adjectives. So are “several” and “many.”' },
         { sent: 'Three ducks ate several crumbs.', tags: 'adj n v adj n', show: ['adj', 'n'],

@@ -17,7 +17,7 @@ window.POS_SETS.all = {
     cards: [
       { title: 'Four Jobs',
         blocks: [
-          { p: 'Every word in a sentence has a job. Here are four jobs.' },
+          { p: 'Every word in a sentence has a job.' },
           { rows: [
             ['N',   'A noun names a person, place, thing, or idea. Mom, beach, and bus are nouns.'],
             ['V',   'A verb shows an action. Swam, ate, and rode are verbs.'],
@@ -29,7 +29,6 @@ window.POS_SETS.all = {
         ] },
       { title: 'One Sentence, Four Jobs',
         blocks: [
-          { p: 'One sentence can have all four jobs.' },
           { sent: 'The yellow taxi stopped suddenly.', tags: 'x adj n v adv', show: ['adj', 'n', 'v', 'adv'],
             say: '“Yellow” tells what kind of taxi. “Suddenly” tells how the taxi stopped.' },
           { sent: 'The noisy seagulls flew away.', tags: 'x adj n v adv', show: ['adj', 'n', 'v', 'adv'],

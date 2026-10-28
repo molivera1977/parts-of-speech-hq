@@ -15,14 +15,14 @@ window.POS_SETS.verb = {
   /* ── LEARN: 6 cards, then a 6-question check ── */
   learn: {
     cards: [
-      { title: 'A Verb Shows an Action',
+      { title: 'Meet the Verb',
         blocks: [
           { term: 'verb', means: 'a word that shows an action' },
           { p: 'A verb tells what a person or thing does.' },
           { words: ['jump', 'run', 'write', 'eat', 'swim', 'clap'], tag: 'v' },
           { sent: 'The ball rolled down the hill.', tags: 'x n v x x n', show: 'v', say: 'A ball is a thing. A thing can do an action too.' }
         ] },
-      { title: 'Ask: Can Someone Do This?',
+      { title: 'The Action Test',
         blocks: [
           { good: 'Can you clap? Yes!', why: 'Clap is an action. “Clap” is a verb.' },
           { bad: 'Can you pencil? No.', why: '“Pencil” is a noun. A pencil is a thing.' },
@@ -46,7 +46,7 @@ window.POS_SETS.verb = {
           { sent: 'Rosa ate an orange after the game.', tags: 'n v x n x x n', show: 'v', say: 'What did Rosa do? Rosa ate.' },
           { tip: 'Do not look at the end of the word. Ask: What did that person or thing do?' }
         ] },
-      { title: 'Verbs and Nouns Can End in -s',
+      { title: 'Watch Out for -s',
         blocks: [
           { p: 'Some verbs end in -s, like jumps and hops. Some nouns end in -s too, like kids and balls.' },
           { sent: 'Ben skips across the gym.', tags: 'n v x x n', show: 'v', say: 'What does Ben do? Ben skips.' },

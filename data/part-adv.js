@@ -14,7 +14,7 @@ window.POS_SETS.adv = {
   /* ── LEARN: 6 cards, then a 6-question check ── */
   learn: {
     cards: [
-      { title: 'An Adverb Describes a Verb', blocks: [
+      { title: 'Meet the Adverb', blocks: [
         { sent: 'The kitten yawned slowly.', tags: 'x n v adv', show: ['v', 'adv'], say: '“Slowly” describes the verb “yawned.”' },
         { sent: 'Dad snored loudly.', tags: 'n v adv', show: ['v', 'adv'], say: '“Loudly” describes the verb “snored.”' },
         { sent: 'Grandpa visited today.', tags: 'n v adv', show: ['v', 'adv'], say: '“Today” describes the verb “visited.”' },
@@ -23,7 +23,7 @@ window.POS_SETS.adv = {
         { p: 'An adverb tells more about the action.' }
       ] },
       { title: 'Adverbs That Tell How', blocks: [
-        { p: 'Some adverbs tell how. Ask: How did the action happen?' },
+        { p: 'Ask: How did the action happen?' },
         { words: ['slowly', 'quickly', 'gently', 'loudly', 'carefully'], tag: 'adv' },
         { sent: 'Mom hummed softly.', tags: 'n v adv', show: 'adv', say: '“Softly” tells how Mom hummed.' },
         { sent: 'Leo quickly washed the dishes.', tags: 'n adv v x n', show: 'adv', say: '“Quickly” tells how Leo washed the dishes.' },
@@ -31,14 +31,14 @@ window.POS_SETS.adv = {
         { tip: 'Many adverbs that tell how end in -ly. Watch out: “jelly” and “family” end in -ly too. Both words are nouns. Always ask: How?' }
       ] },
       { title: 'Adverbs That Tell When', blocks: [
-        { p: 'Some adverbs tell when. Ask: When did the action happen?' },
+        { p: 'Ask: When did the action happen?' },
         { words: ['today', 'yesterday', 'tomorrow', 'soon', 'later'], tag: 'adv' },
         { sent: 'Nia baked muffins yesterday.', tags: 'n v n adv', show: 'adv', say: '“Yesterday” tells when Nia baked muffins.' },
         { sent: 'Soon the bus arrived.', tags: 'adv x n v', show: 'adv', say: '“Soon” tells when the bus arrived.' },
         { sent: 'Sofia cleaned the room later.', tags: 'n v x n adv', show: 'adv', say: '“Later” tells when Sofia cleaned the room.' }
       ] },
       { title: 'Adverbs That Tell Where', blocks: [
-        { p: 'Some adverbs tell where. Ask: Where did the action happen?' },
+        { p: 'Ask: Where did the action happen?' },
         { words: ['outside', 'inside', 'upstairs', 'downstairs', 'here', 'everywhere', 'nearby', 'away'], tag: 'adv' },
         { sent: 'Luis carried the laundry downstairs.', tags: 'n v x n adv', show: 'adv', say: '“Downstairs” tells where Luis carried the laundry.' },
         { sent: 'Grandma hung the towels outside.', tags: 'n v x n adv', show: 'adv', say: '“Outside” tells where Grandma hung the towels.' },

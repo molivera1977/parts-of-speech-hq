@@ -13,7 +13,6 @@ window.POS_SETS.noun = {
   learn: {
     cards: [
       { title: 'Every Word Has a Job', blocks: [
-        { p: 'Every word in a sentence has a job.' },
         { p: 'The job a word does is called the part of speech.' },
         { p: 'The first job we learn is the noun.' },
         { term: 'noun', means: 'a word that names a person, place, thing, or idea' },
@@ -21,25 +20,23 @@ window.POS_SETS.noun = {
         { p: 'Little words like a, the, to, and at have other jobs. We skip little words here.' }
       ] },
       { title: 'A Noun Can Name a Person', blocks: [
-        { p: 'A noun can name a person.' },
         { words: ['teacher', 'doctor', 'baby', 'Grandpa', 'sister'], tag: 'n' },
         { p: 'A name is a noun too. Maya, Luis, and Ana are nouns.' },
         { sent: 'Maya helped the teacher.', tags: 'n v x n', show: 'n', say: 'Maya is a person. A teacher is a person.' }
       ] },
       { title: 'A Noun Can Name a Place', blocks: [
-        { p: 'A noun can name a place. A place is where you can go.' },
+        { p: 'A place is where you can go.' },
         { words: ['school', 'park', 'library', 'beach', 'kitchen', 'Bridgeport'], tag: 'n' },
         { p: 'The name of a city is a noun too. Bridgeport is a place.' },
         { sent: 'Leo swam at the beach.', tags: 'n v x x n', show: 'n', say: 'A beach is a place.' }
       ] },
       { title: 'A Noun Can Name a Thing', blocks: [
-        { p: 'A noun can name a thing.' },
         { words: ['pencil', 'ball', 'backpack', 'apple', 'bike'], tag: 'n' },
         { p: 'An animal is a thing too. A dog, a frog, and a bird are living things.' },
         { sent: 'Rosa dropped an apple.', tags: 'n v x n', show: 'n', say: 'An apple is a thing.' }
       ] },
       { title: 'A Noun Can Name an Idea', blocks: [
-        { p: 'A noun can name an idea. An idea is something you think or feel.' },
+        { p: 'An idea is something you think or feel.' },
         { p: 'You cannot touch an idea.' },
         { words: ['joy', 'love', 'kindness', 'courage', 'happiness', 'friendship', 'pride'], tag: 'n' },
         { p: 'Courage means being brave.' },

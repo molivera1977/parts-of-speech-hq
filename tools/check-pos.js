@@ -182,6 +182,21 @@ function check(W, only) {
         if (k === 'rows') (b.rows || []).forEach(r => textRules(bw, r[1], partKey));
         if (k === 'good' || k === 'bad') { textRules(bw, b[k], partKey); textRules(bw, b.why, partKey); if (!b.why) bad(bw, 'needs a why'); }
       });
+      // a line that only says the card's title again (the title is read aloud with the card): Marcos 10/27 sent
+      // "An Adjective Can Tell What Kind" + "Many adjectives tell what kind." and "An Adjective Describes a Noun" +
+      // "adjective means a word that describes a noun". Cut the line, or give the card a title that adds something.
+      const STOP = ['a', 'an', 'the', 'can', 'is', 'are', 'many', 'some', 'of', 'to', 'means', 'word', 'that'];
+      const wordsOf = t => String(t).toLowerCase().replace(/[^a-z ]/g, ' ').split(/\s+/).filter(w => w && !STOP.includes(w)).map(w => w.replace(/(es|s)$/, ''));
+      const tw = new Set(wordsOf(c.title));
+      (c.blocks || []).forEach((b, bi) => {
+        const t = b.p || b.tip || (b.term ? `${b.term} ${b.means}` : '');
+        String(t).split(/(?<=[.!?])\s+/).forEach(line => {
+          const lw = wordsOf(line);
+          if (!lw.length || !tw.size) return;
+          const same = lw.filter(w => tw.has(w)).length, added = lw.length - same;
+          if (same / tw.size >= 0.75 && added <= 1) bad(`${cw} block ${bi + 1}`, `says the title again ("${c.title}" / "${line}") — cut the line or change the title`);
+        });
+      });
       const all = (c.blocks || []).map(b => b.p || b.tip || b.why || b.means || '').join(' ');
       if (all.split(/\s+/).length > 90) bad(cw, `card is ${all.split(/\s+/).length} words — one idea per card (max 90)`);
     });
@@ -389,7 +404,8 @@ const PLANTS = {
   'missing-why':      W => { const it = firstOf(W, 'tap'); delete it.why; },
   'ly-adjective':     W => { const it = firstOf(W, 'mc'); it.choices[1] = 'friendly'; },
   'too-few':          W => { W.POS_SETS.noun.practice.versions[0].pop(); },
-  'yesno-wrong':      W => { const it = firstOf(W, 'yesno'); if (it) it.answer = it.answer === 'yes' ? 'no' : 'yes'; }
+  'yesno-wrong':      W => { const it = firstOf(W, 'yesno'); if (it) it.answer = it.answer === 'yes' ? 'no' : 'yes'; },
+  'card-says-title':  W => { const c = W.POS_SETS.adj.learn.cards[2]; c.blocks.unshift({ p: 'Many adjectives tell what kind.' }); c.title = 'An Adjective Can Tell What Kind'; }
 };
 function firstOf(W, type, extra) {
   for (const p of W.POS_PARTS) {
