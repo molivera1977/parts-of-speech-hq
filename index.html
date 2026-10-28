@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=pos3" />
+  <link rel="stylesheet" href="style.css?v=pos4" />
 </head>
 <body>
 <canvas id="confetti-canvas"></canvas>
@@ -35,7 +35,7 @@
           </div>
         </div>
         <div class="welcome-hero-text">
-          <p>Every word has a job. Learn four jobs: nouns, verbs, adjectives, and adverbs. Then practice them and review them.</p>
+          <p>Every word has a job. Learn four jobs: nouns, verbs, adjectives, and adverbs. Then practice and review each job.</p>
           <button class="lgs-btn" onclick="app.showReadAloudIntro()">🚀 Let's Get Started!</button>
         </div>
       </div>
@@ -110,7 +110,7 @@
                      padding:12px 16px;margin-bottom:12px;font-size:0.88rem;color:#2c3e50;line-height:1.6;">
           📋 <strong>Rules:</strong> Tap <strong>▶ Continue</strong>. Your path shows where you are.
           You go in order: <strong>Nouns, Verbs, Adjectives, Adverbs</strong>, then <strong>All Four</strong>. Each part has Learn, Practice, and Review.
-          Get <strong>8 out of 10</strong> on a Review to open the next part. You can do any open part again <strong>as many times as you want</strong>.
+          Get <strong>8 out of 10</strong> on a Review to open the next part (All Four: <strong>9 out of 12</strong>). You can do any open part again <strong>as many times as you want</strong>.
         </div>
         <div style="text-align:center;margin-bottom:8px;">
           <button class="score-btn" onclick="app.showScores()">📊 View Score History</button>
@@ -206,16 +206,16 @@
         <button class="speak-btn" onclick="speakDir(this)">🔊</button>
         <h3 style="margin:0;">✅ Pass the Review</h3>
       </div>
-      <p class="dir-text">Get 8 out of 10 right on a Review to open the next part. If you get fewer than 8, tap Try Again. You will get new sentences. Practice makes it stick!</p>
+      <p class="dir-text">Get 8 out of 10 right on a Review to open the next part. All Four has 12 questions, so get 9 out of 12. If you get fewer, tap Try Again. You will get new sentences.</p>
     </div>
 
     <div class="dir-section read-dir">
       <div class="dir-row">
         <button class="speak-btn" onclick="speakDir(this)">🔊</button>
-        <h3 style="margin:0;">📖 Reading Timer</h3>
+        <h3 style="margin:0;">🔊 Listen First</h3>
       </div>
-      <p class="dir-text">The answers stay locked for 8 seconds. Read the question. Read the sentence. Then read the choices.</p>
-      <span class="timer-chip chip-amber">⏱️ Read first, then answer</span>
+      <p class="dir-text">Each question is read to you first. Then the answers open. Tap 🔊 to hear the question again.</p>
+      <span class="timer-chip chip-amber">🔊 Listen first, then answer</span>
     </div>
 
     <div class="dir-section soak-dir">
@@ -422,12 +422,12 @@
 
 <script src="share.js?v=3"></script>
 <script src="form-label.js?v=1"></script>
-<script src="data/pos.js?v=pos1"></script>
-<script src="data/part-noun.js?v=pos1"></script>
-<script src="data/part-verb.js?v=pos1"></script>
-<script src="data/part-adj.js?v=pos1"></script>
-<script src="data/part-adv.js?v=pos1"></script>
-<script src="data/part-all.js?v=pos1"></script>
-<script src="script.js?v=pos3-keys1"></script>
+<script src="data/pos.js?v=pos2"></script>
+<script src="data/part-noun.js?v=pos2"></script>
+<script src="data/part-verb.js?v=pos2"></script>
+<script src="data/part-adj.js?v=pos2"></script>
+<script src="data/part-adv.js?v=pos2"></script>
+<script src="data/part-all.js?v=pos2"></script>
+<script src="script.js?v=pos4-keys1"></script>
 </body>
 </html>

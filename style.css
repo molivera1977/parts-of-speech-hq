@@ -1170,3 +1170,8 @@ li.ip-path-here { background: #f7f3fb; border-color: #8e44ad; border-width: 3px;
 .ip-path-row { border-left: 7px solid var(--part, #e2e6e5); flex-wrap: wrap; }
 .ip-act { border-left: 7px solid var(--part); padding-left: 6px; border-radius: 12px; }
 @media (max-width: 600px) { .pos-sentence .rp-say { font-size: 1.4rem; } .pos-cover-word { font-size: 1.25rem; padding: 10px 10px 6px; } }
+
+/* Read first (10/27): while the question is read aloud the bar says "Listen first" — no countdown */
+.reading-timer-bar.pos-listening .reading-timer-fill-wrap,
+.reading-timer-bar.pos-listening #reading-count,
+.reading-timer-bar.pos-listening #reading-count + span { display: none; }

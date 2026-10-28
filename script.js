@@ -234,10 +234,10 @@ function sectionBank(section, level, version) {
     } else if (it.type === 'yesno') {
       const T = TAGS[it.ask];
       const yes = it.answer === 'yes';
-      const isNote = `The word “${it.word}” is ${T.a} ${T.name}. “${cap(it.word)}” ${T.job}.`;
+      const isNote = `Yes, “${it.word}” is ${T.a} ${T.name}.`;
       out.push(Object.assign(base, { q, choices: ['Yes', 'No'], answer: yes ? 0 : 1, fixed: true,
         mark: toks.findIndex(t => t.word === it.word),
-        notes: yes ? ['', isNote] : [window.POS_NOTE(it.word, it.tag, it.ask, section), ''] }));
+        notes: yes ? ['', isNote] : [`No. ${window.POS_NOTE(it.word, it.tag, it.ask, section)}`, ''] }));
     } else if (it.type === 'name') {
       const taught = window.POS_TAUGHT(section);
       const at = toks.findIndex(t => t.word === it.word);
@@ -1320,6 +1320,7 @@ const app = {
     // The cards play at the start of every try: Learn's lesson cards, and the one "Remember" card
     // of Practice and Review ("nothing gets said once"). A resume goes straight back to the questions.
     this.cardsSeen = [];
+    this._tapHelpHeard = false;   // the tap help is read aloud on the first word tap of each try
 
     this._enterQuiz();
     logEvent('start', { v: this.version, L: level });
@@ -1486,8 +1487,15 @@ const app = {
     return { secs: READ_SECS, first: false };
   },
 
+  /* ── READ FIRST (Marcos 10/27: "this needs to be the standard" — every direction is read aloud right away and
+     the work stays locked until it is heard; the critique of 10/27 found a non-reader just waited out the 8 s lock).
+     The question, its sentence and — on the first word tap of a try — the tap help are read aloud the moment
+     the question opens; the answers open when the voice reaches the end. Stopped early (another 🔊, another tab):
+     the bar says to tap 🔊, and the question's 🔊 reads it all again. No voice on the device: the old wait,
+     8 s to read the question, the sentence and the choices. The Remember line is not read (the card just did). */
   startReadTimer() {
     if (this.readInterval) { clearInterval(this.readInterval); this.readInterval = null; }
+    clearTimeout(this._qSayStart); clearTimeout(this._qSayPause);
     const bar   = document.getElementById('reading-timer-bar');
     const fill  = document.getElementById('reading-fill');
     const count = document.getElementById('reading-count');
@@ -1499,37 +1507,108 @@ const app = {
     };
 
     if (reviewMode) {
+      this._qLocked = false;
       bar.classList.add('hidden');
       setLocked(false);
       setTimeout(() => this._autoAnswer(), 300);
       return;
     }
 
-    const { secs, first } = this._readSecs();
-    if (label) label.textContent = '📖 Read carefully — answers unlock in';
-    bar.classList.remove('hidden');
-    count.textContent = secs;
-    fill.style.transition = 'none';
-    fill.style.width = '100%';
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      fill.style.transition = `width ${secs}s linear`;
-      fill.style.width = '0%';
-    }));
-
     setLocked(true);
+    this._qLocked = true;
+    this._qOpen = () => {
+      if (!this._qLocked) return;
+      this._qLocked = false;
+      clearTimeout(this._qSayStart);
+      if (this.readInterval) { clearInterval(this.readInterval); this.readInterval = null; }
+      bar.classList.add('hidden');
+      bar.classList.remove('pos-listening');
+      setLocked(false);
+      document.getElementById('confirm-btn').classList.remove('hidden');
+    };
+    // No voice on this device: the old wait — 8 s to read the question, the sentence and the choices
+    this._qTimed = () => {
+      if (!this._qLocked || this.readInterval) return;
+      const secs = this._readSecs().secs;
+      bar.classList.remove('pos-listening');
+      label.textContent = '📖 Read carefully — answers unlock in';
+      count.textContent = secs;
+      fill.style.transition = 'none';
+      fill.style.width = '100%';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        fill.style.transition = `width ${secs}s linear`;
+        fill.style.width = '0%';
+      }));
+      let remaining = secs;
+      this.readInterval = setInterval(() => {
+        remaining--;
+        count.textContent = remaining;
+        if (remaining <= 0) this._qOpen();
+      }, 1000);
+    };
+    bar.classList.remove('hidden');
+    bar.classList.add('pos-listening');
+    label.textContent = '🔊 Listen first. The answers open when the question has been read.';
+    this._sayQuestion();
+  },
 
-    let remaining = secs;
-    this.readInterval = setInterval(() => {
-      remaining--;
-      count.textContent = remaining;
-      if (remaining <= 0) {
-        clearInterval(this.readInterval);
-        this.readInterval = null;
-        bar.classList.add('hidden');
-        setLocked(false);
-        document.getElementById('confirm-btn').classList.remove('hidden');
+  /* Reads the question, the sentence and (first time) the tap help, one after the other, each word lit */
+  _sayQuestion() {
+    if (!this._qLocked) return;
+    const btn = document.getElementById('speak-q-btn');
+    const label = document.getElementById('reading-label');
+    stopActiveSpeech();
+    clearTimeout(this._qSayStart); clearTimeout(this._qSayPause);
+    const help = document.querySelector('#answers .ip-hot-help .rp-say');
+    const withHelp = !!help && !this._tapHelpHeard;
+    const lines = [document.getElementById('question-text'), document.querySelector('#q-show .rp-say'), withHelp ? help : null]
+      .filter(Boolean).map(blockSpans).filter(sp => sp.length);
+    if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined' || !lines.length) { this._qTimed(); return; }
+    const token = this._qSayToken = (this._qSayToken || 0) + 1;
+    label.textContent = '🔊 Listen first. The answers open when the question has been read.';
+    activeSpeakBtn = btn;
+    btn.textContent = '⏹';
+    let started = false;
+    // no sound started: this device cannot speak
+    this._qSayStart = setTimeout(() => {
+      if (token !== this._qSayToken || started) return;
+      this._qSayToken++;
+      stopActiveSpeech();
+      this._qTimed();
+    }, LISTEN_START_WAIT);
+    const sayLine = k => {
+      if (token !== this._qSayToken || !this._qLocked) return;
+      if (activeSpeakBtn !== btn) {   // stopped before the end: it does not count
+        label.textContent = '👆 Tap 🔊 to hear the question to the end. Then the answers open.';
+        return;
       }
-    }, 1000);
+      if (k >= lines.length) {
+        btn.textContent = '🔊'; activeSpeakBtn = null;
+        if (withHelp) this._tapHelpHeard = true;
+        this._qOpen();
+        return;
+      }
+      const spans = lines[k];
+      let text = spokenOf(spans);
+      if (!/[.!?:,]["”’]?$/.test(text)) text += '.';
+      let hlIdx = 0;
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'en-US'; u.rate = READ_RATE;
+      u.onstart = () => { started = true; };
+      u.onboundary = e => {
+        if (e.name !== 'word') return;
+        spans.forEach(sp => sp.classList.remove('hl'));
+        if (spans[hlIdx]) spans[hlIdx].classList.add('hl');
+        hlIdx++;
+      };
+      u.onend = () => {
+        spans.forEach(sp => sp.classList.remove('hl'));
+        this._qSayPause = setTimeout(() => sayLine(k + 1), 250);
+      };
+      addHighlightFallback(u, spans);
+      window.speechSynthesis.speak(u);
+    };
+    sayLine(0);
   },
 
   /* ── NEXT SOAK (6s) ── */
@@ -1743,6 +1822,9 @@ const app = {
     document.getElementById('question-text').innerHTML = wrapWords(escapeHtml(q.q));
     document.getElementById('q-before').innerHTML = this._rememberHTML();
     document.getElementById('q-show').innerHTML = this._showHTML(q, { section: this.currentSection });
+    // split the sentence into words for the read-aloud highlight NOW, before the word buttons get their taps:
+    // splitting later (the first 🔊) rebuilt the buttons and the taps were lost (found 10/27)
+    document.querySelectorAll('#q-show .rp-say').forEach(blockSpans);
     document.querySelectorAll('#q-show .pos-tok').forEach(el => {
       const pick = () => this._selectTok(Number(el.dataset.i), el);
       el.addEventListener('click', pick);
@@ -1768,7 +1850,7 @@ const app = {
 
     if (q.type === 'tap') {
       // Tap a word: the words are buttons in the sentence; this box says how and shows the pick
-      wrap.innerHTML = sayBlockHTML('ip-hot-help', '👆 Tap one word in the sentence. The word turns yellow. Then tap That’s My Answer!') +
+      wrap.innerHTML = sayBlockHTML('ip-hot-help', '👆 Tap one word. Then tap That’s My Answer!') +
         `<div class="ip-hot-pick" id="hot-pick" aria-live="polite">No word picked yet.</div>`;
     } else {
       q.choices.forEach((text, i) => {
@@ -2044,34 +2126,34 @@ const app = {
      always the "right" wording (pickIdx null). */
   _answerHTML(q, correct, pickIdx) {
     const T = TAGS[q.ask] || {};
-    let best, rightLine = '';
-    if (q.type === 'tap') {
-      const words = q.rights.map(i => `“${escapeHtml(q.choices[i])}”`);
-      best = words.length > 1
-        ? `The ${T.name}s in the sentence are <strong>${listWords(words)}</strong>.`
-        : `The ${T.name} in the sentence is <strong>${words[0]}</strong>.`;
-      if (pickIdx != null) rightLine = `The word “${escapeHtml(q.choices[pickIdx])}” is ${T.a} ${T.name}.`;
-    } else if (q.type === 'name') {
-      const R = TAGS[q.markTag];
-      best = `The word “${escapeHtml(q.word)}” is ${R.a} <strong>${R.name}</strong>.`;
-      rightLine = `The word “${escapeHtml(q.word)}” is ${R.a} ${R.name}.`;
-    } else {
-      best = `The best answer is: <strong>${escapeHtml(q.choices[q.answer])}</strong>.`;
-      if (q.type === 'mc' || q.type === 'fill' || q.type === 'build') rightLine = `The word “${escapeHtml(q.choices[q.answer])}” is ${T.a} ${T.name}.`;
-    }
+    const say = w => `“${escapeHtml(w)}”`;
+    const right = q.type === 'tap' ? q.rights.map(i => q.choices[i]) : [q.choices[q.answer]];
+    // the right answer in a few words ("The noun is “kitchen”.")
+    let line;
+    if (q.type === 'tap') line = right.length > 1 ? `The ${T.name}s are <strong>${listWords(right.map(say))}</strong>.` : `The ${T.name} is <strong>${say(right[0])}</strong>.`;
+    else if (q.type === 'name') line = `${say(cap(q.word))} is ${TAGS[q.markTag].a} <strong>${TAGS[q.markTag].name}</strong>.`;
+    else if (q.type === 'sort' || q.type === 'yesno') line = `<strong>${escapeHtml(cap(right[0]))}</strong>.`;
+    else line = `The ${T.name} is <strong>${say(right[0])}</strong>.`;
     const note = !correct && pickIdx != null ? (q.notes && q.notes[pickIdx]) || '' : '';
     const why = escapeHtml(q.why || '');
-    const fbText = pickIdx == null
-      ? `✅ ${best} ${why}`
-      : correct
-        ? `✅ <strong>Correct!</strong> ${rightLine} ${why}`
-        : `❌ <strong>Not quite.</strong> ${note ? escapeHtml(note) + ' ' : ''}${best} ${why}`;
-    let html = `<div class="rp-block rp-fb">${SPEAK_HTML}<div class="rp-say fb-text">${fbText}</div></div>`;
+    let fbText;
+    if (pickIdx == null) fbText = `✅ ${line} ${why}`;   // Slide Mode: the answer, then why
+    else if (correct) {
+      const picked = q.choices[pickIdx];
+      const is = q.type === 'name' ? `${say(cap(q.word))} is ${TAGS[q.markTag].a} ${TAGS[q.markTag].name}.`
+        : (q.type === 'sort' || q.type === 'yesno') ? '' : `${say(cap(picked))} is ${T.a} ${T.name}.`;
+      fbText = `✅ <strong>Correct!</strong> ${is} ${why}`;
+    } else {
+      // a name note already says what the word is; a sort's why names the group; a yes/no note says yes or no
+      const fix = q.type === 'name' || q.type === 'sort' || q.type === 'yesno' ? '' : line;
+      fbText = `❌ <strong>Not quite.</strong> ${note ? escapeHtml(note) + ' ' : ''}${fix} ${why}`;
+    }
+    let html = `<div class="rp-block rp-fb">${SPEAK_HTML}<div class="rp-say fb-text">${fbText.replace(/\s+/g, ' ').trim()}</div></div>`;
     if (q.type === 'build' && q.at + 1 === q.slotTags.length) {
       const sentence = buildText(q, q.slotTags.length);
       let k = 0;
       const tags = window.POS_SPLIT(q.frame).map(t => /^\{(n|v|adj|adv)\}/.test(t.text) ? q.slotTags[k++] : 'x');
-      html += `<div class="rp-after">${sayBlockHTML('pos-sentence pos-built', posSentenceHTML(sentence, tags, window.POS_TAG_ORDER), '📝 Your sentence:')}</div>`;
+      html += `<div class="rp-after">${sayBlockHTML('pos-sentence pos-built', posSentenceHTML(sentence, tags, window.POS_TAG_ORDER), '📝 The sentence:')}</div>`;
     }
     return html;
   },
@@ -2176,6 +2258,7 @@ const app = {
   speakQuestion() {
     const qBtn = document.getElementById('speak-q-btn');
     if (activeSpeakBtn === qBtn) { stopActiveSpeech(); return; }
+    if (this._qLocked && !reviewMode) { this._sayQuestion(); return; }
     stopActiveSpeech();
     activeSpeakBtn = qBtn;
     qBtn.textContent = '⏹';
@@ -2484,6 +2567,7 @@ window.addEventListener('resize', () => {
 function hushReadAloud() {
   introToken++; clearTimeout(introTimer);
   clearTimeout(app._cardSpeak); clearTimeout(app._cardPause);
+  clearTimeout(app._qSayPause);
   stopActiveSpeech();
 }
 window.addEventListener('pagehide', hushReadAloud);

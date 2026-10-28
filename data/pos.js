@@ -78,8 +78,9 @@ window.POS_Q = function (it, partKey) {
   const w = `“${it.word}”`;
   switch (it.type) {
     case 'tap': {
-      const many = window.POS_TAG_LIST(it.tags).filter(t => t === it.ask).length > 1;
-      return many ? `Tap ${T.a} ${T.name} in the sentence.` : `Tap the ${T.name} in the sentence.`;
+      // heard aloud, "a noun" and "the noun" sound alike, so a sentence with 2–3 right words says how many (critique 10/27)
+      const n = window.POS_TAG_LIST(it.tags).filter(t => t === it.ask).length;
+      return n > 1 ? `Tap one ${T.name}. The sentence has ${['', 'one', 'two', 'three'][n] || n} ${T.name}s.` : `Tap the ${T.name} in the sentence.`;
     }
     case 'mc':    return it.s ? `Which word in the sentence is ${T.a} ${T.name}?` : `Which word is ${T.a} ${T.name}?`;
     case 'fill':  return `Which ${T.name} best completes the sentence?`;
@@ -95,19 +96,23 @@ window.POS_Q = function (it, partKey) {
   return '';
 };
 
-/* The note after a wrong pick: what the picked word really is. A job not taught yet is
-   described without its name. "a, an, the" do not count as adjectives (his sheet). */
+/* The note after a wrong pick: what the picked word really is, in one short sentence (critique 10/27: the
+   definition is already on the screen in the Remember line). A job not taught yet is described without its
+   name. a, an, the and the other little words are "little words" (taught on Nouns card 1); "a, an, the" point
+   to a noun, and do not count as adjectives (his sheet). */
 window.POS_NOTE = function (word, tag, ask, partKey) {
   const A = window.POS_TAGS[ask];
   if (!A || tag === ask) return '';
-  const w = `The word “${word}”`;
-  const W2 = `“${String(word).charAt(0).toUpperCase()}${String(word).slice(1)}”`;   // starts the second sentence
+  const W = `“${String(word).charAt(0).toUpperCase()}${String(word).slice(1)}”`;
   const T = window.POS_TAGS[tag];
   if (T) {
     return window.POS_TAUGHT(partKey).includes(tag)
-      ? `${w} is ${T.a} ${T.name}, not ${A.a} ${A.name}. ${W2} ${T.job}.`
-      : `${w} is not ${A.a} ${A.name}. ${W2} ${T.plain}.`;
+      ? `${W} is ${T.a} ${T.name}, not ${A.a} ${A.name}.`
+      : `${W} is not ${A.a} ${A.name}. ${W} ${T.plain}.`;
   }
-  if (ask === 'adj' && /^(a|an|the)$/i.test(word)) return 'We do not count a, an, or the as adjectives.';
-  return `${w} is not ${A.a} ${A.name}. ${A.a === 'an' ? 'An' : 'A'} ${A.name} ${A.job}.`;
+  if (/^(a|an|the)$/i.test(word)) {
+    if (ask === 'adj') return 'We do not count a, an, or the.';
+    if (ask === 'n') return `${W} is a little word. ${W} points to a noun.`;
+  }
+  return `${W} is a little word, not ${A.a} ${A.name}.`;
 };

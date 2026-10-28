@@ -336,6 +336,28 @@ function check(W, only) {
         if (types.size < 3) bad(`${where} v${vi + 1}`, `use at least 3 kinds of questions (has ${[...types].join(', ')})`);
         const taps = (items || []).filter(i => i.type === 'tap').length;
         if (taps < 2) bad(`${where} v${vi + 1}`, `needs at least 2 tap questions (has ${taps})`);
+        // ── no surface tricks (critique 10/27): a Level 1 reader must not pass by "pick the -ly word",
+        // "pick the -ed word", "pick the -y word", "tap the last word" or "tap the first word (the name)".
+        const END = { v: /ed$/i, adj: /y$/i, adv: /ly$/i };
+        const boxes = [];
+        (items || []).forEach(i => {
+          if (i.type === 'build') i.slots.forEach(sl => boxes.push({ ask: sl.tag, choices: sl.choices }));
+          else if (i.type === 'mc' || i.type === 'fill') boxes.push({ ask: i.ask, choices: i.choices });
+        });
+        const judged = boxes.filter(b => END[b.ask]);
+        const byEnding = judged.filter(b => END[b.ask].test(b.choices[0]) && b.choices.filter(c => END[b.ask].test(c)).length === 1);
+        if (judged.length >= 2 && judged.every(b => END[b.ask].test(b.choices[0])))
+          bad(`${where} v${vi + 1}`, `every right word in pick-a-word ends in its job's ending (-ed / -y / -ly): break the pattern at least once (swam, soft, soon …)`);
+        if (judged.length >= 2 && byEnding.length > Math.ceil(judged.length / 2))
+          bad(`${where} v${vi + 1}`, `${byEnding.length} of ${judged.length} pick-a-word questions can be answered by the ending alone (max ${Math.ceil(judged.length / 2)}): give a wrong choice the same ending, or a right word without it`);
+        const tapsOf = ask => (items || []).filter(i => i.type === 'tap' && i.ask === ask);
+        const advTaps = tapsOf('adv');
+        const advLast = advTaps.filter(i => { const t = W.POS_TAG_LIST(i.tags); return t[t.length - 1] === 'adv'; });
+        if (advTaps.length >= 2 && advLast.length > Math.ceil(advTaps.length * 0.6))
+          bad(`${where} v${vi + 1}`, `${advLast.length} of ${advTaps.length} adverb taps end on the adverb (max ${Math.ceil(advTaps.length * 0.6)}): put a how/when adverb earlier ("Mom slowly stirred the soup.")`);
+        const nounTaps = tapsOf('n');
+        if (nounTaps.length >= 2 && nounTaps.every(i => W.POS_TAG_LIST(i.tags)[0] === 'n'))
+          bad(`${where} v${vi + 1}`, 'every noun tap starts with a noun (a name): start at least one with a little word ("The baby dropped a spoon.")');
         if (part.key === 'all') {
           const asks = new Set((items || []).filter(i => i.ask).map(i => i.ask));
           (items || []).filter(i => i.type === 'name').forEach(i => asks.add(W.POS_TAG_LIST(i.tags)[W.POS_SPLIT(i.s).findIndex(t => t.word === i.word)]));
