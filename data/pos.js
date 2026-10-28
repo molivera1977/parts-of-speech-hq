@@ -34,7 +34,7 @@ window.POS_PARTS = [
     def: 'A noun names a person, place, thing, or idea.',
     bins: ['a person', 'a place', 'a thing', 'an idea'] },
   { key: 'verb', letter: 'V', tag: 'v',   icon: '🟥', label: 'Verbs',      sub: 'Action words',
-    def: 'A verb shows an action. A verb tells what someone or something does.' },
+    def: 'A verb shows an action. A verb tells what a person or thing does.' },
   { key: 'adj',  letter: 'J', tag: 'adj', icon: '🟩', label: 'Adjectives', sub: 'Words that describe a noun',
     def: 'An adjective describes a noun. An adjective tells what kind or how many.',
     bins: ['what kind', 'how many'] },

@@ -2127,7 +2127,10 @@ const app = {
   _answerHTML(q, correct, pickIdx) {
     const T = TAGS[q.ask] || {};
     const say = w => `“${escapeHtml(w)}”`;
-    const right = q.type === 'tap' ? q.rights.map(i => q.choices[i]) : [q.choices[q.answer]];
+    // a sentence's first word loses its capital mid-line ("The adverb is “yesterday”."); a name (a noun) keeps it
+    const first = q.s ? window.POS_SPLIT(q.s)[0] : null;
+    const low = w => first && w === first.word && (q.tags || [])[0] !== 'n' ? String(w).toLowerCase() : w;
+    const right = (q.type === 'tap' ? q.rights.map(i => q.choices[i]) : [q.choices[q.answer]]).map(low);
     // the right answer in a few words ("The noun is “kitchen”.")
     let line;
     if (q.type === 'tap') line = right.length > 1 ? `The ${T.name}s are <strong>${listWords(right.map(say))}</strong>.` : `The ${T.name} is <strong>${say(right[0])}</strong>.`;
@@ -2144,8 +2147,10 @@ const app = {
         : (q.type === 'sort' || q.type === 'yesno') ? '' : `${say(cap(picked))} is ${T.a} ${T.name}.`;
       fbText = `✅ <strong>Correct!</strong> ${is} ${why}`;
     } else {
-      // a name note already says what the word is; a sort's why names the group; a yes/no note says yes or no
-      const fix = q.type === 'name' || q.type === 'sort' || q.type === 'yesno' ? '' : line;
+      // a name note already says what the word is; a sort's why names the group; a yes/no note says yes or no;
+      // and a why that already names every right word ("What kind of frog? Green.") makes the answer line a repeat
+      const named = right.every(w => new RegExp(`(^|[^a-z])${String(w).toLowerCase()}([^a-z]|$)`).test(String(q.why || '').toLowerCase()));
+      const fix = q.type === 'name' || q.type === 'sort' || q.type === 'yesno' || named ? '' : line;
       fbText = `❌ <strong>Not quite.</strong> ${note ? escapeHtml(note) + ' ' : ''}${fix} ${why}`;
     }
     let html = `<div class="rp-block rp-fb">${SPEAK_HTML}<div class="rp-say fb-text">${fbText.replace(/\s+/g, ' ').trim()}</div></div>`;
