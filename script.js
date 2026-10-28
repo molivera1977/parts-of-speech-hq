@@ -507,9 +507,25 @@ function stepWait(st) {
     ? `Get ${needFor(st.section, st.level)} of ${sectionBank(st.section, st.level, 1).length} on ${act.short} Review first`
     : `Finish ${act.short} ${stageName(st.level)} first`;
 }
+/* ── BACK TO LEARN AFTER 2 MISSED REVIEWS (Marcos 10/28: "send them back after 2 failed reviews") ──
+   A Review missed twice since the part's last Learn sends the student back through that part's Learn (the lesson
+   cards and the short check); then the Review opens again, with new sentences. Two more misses → Learn again.
+   Until that Learn is done, the Review is shut (the Teacher PIN still lets a student past). */
+const RETEACH_AFTER = 2;
+function missedReviewsSinceLearn(name, section) {
+  const top = LEVELS[LEVELS.length - 1];
+  const mine = JSON.parse(localStorage.getItem(SCORES_KEY) || '[]').filter(s => s.name === name && s.section === section && s.done && s.total > 0);
+  let lastLearn = -1;
+  mine.forEach((s, i) => { if ((s.level || 1) === 1) lastLearn = i; });
+  return mine.slice(lastLearn + 1).filter(s => (s.level || 1) === top && s.score / s.total * 100 < passPct(top)).length;
+}
+function reteachDue(name, section) {
+  return !passed(name, section, LEVELS[LEVELS.length - 1]) && missedReviewsSinceLearn(name, section) >= RETEACH_AFTER;
+}
 /* Why this step is not open for this student yet ('' = it is open): names the FIRST step not done */
 function gateWait(name, section, level) {
   if (SHARE_MODE || reviewMode) return '';
+  if (passPct(level || 1) && reteachDue(name, section)) return `Go back through ${ACTIVITIES[section].short} Learn first`;
   const at = FLOW.findIndex(st => st.section === section && st.level === (level || 1));
   for (let i = 0; i < at; i++) {
     if (!passed(name, FLOW[i].section, FLOW[i].level)) return stepWait(FLOW[i]);
@@ -518,6 +534,7 @@ function gateWait(name, section, level) {
 }
 /* The stage the big button starts: the first one not done yet (all done → Review) */
 function nextLevelFor(name, section) {
+  if (reteachDue(name, section)) return 1;
   for (const L of LEVELS) if (!passed(name, section, L)) return L;
   return LEVELS[LEVELS.length - 1];
 }
@@ -529,14 +546,17 @@ function nextLevelFor(name, section) {
    part list stays, so a student can still redo any open step. */
 const FLOW = Object.keys(ACTIVITIES).flatMap(k => LEVELS.map(L => ({ section: k, level: L })));
 function nextStep(name) {
-  return FLOW.find(st => !passed(name, st.section, st.level)) || null;
+  const st = FLOW.find(st => !passed(name, st.section, st.level)) || null;
+  // two missed Reviews: that part's Learn again first
+  if (st && passPct(st.level) && reteachDue(name, st.section)) return { section: st.section, level: 1, reteach: true };
+  return st;
 }
 /* The step after this one in the order (the share link and Teacher Access save no scores) */
 function stepAfter(section, level) {
   const i = FLOW.findIndex(st => st.section === section && st.level === level);
   return i >= 0 && i + 1 < FLOW.length ? FLOW[i + 1] : null;
 }
-function stepLabel(st) { return `${ACTIVITIES[st.section].short} · ${stageName(st.level)}`; }
+function stepLabel(st) { return `${ACTIVITIES[st.section].short} · ${stageName(st.level)}${st.reteach ? ' again' : ''}`; }
 
 /* ── YOUR PATH (the Inference Practice path, one row per part) ──
    Under ▶ Continue: the five parts, each with its Learn · Practice · Review (✅ done ·
@@ -556,8 +576,8 @@ function pathHTML(name) {
     const cls = ok ? 'done' : here ? 'here' : 'later';
     const mark = ok ? '✅' : here ? '▶' : '○';   // later in the path (not locked: the list may have it open)
     const chips = LEVELS.map(L => {
-      const p = passed(name, k, L), now = here && st.level === L;
-      return `<span class="pos-chip pos-chip-${p ? 'done' : now ? 'now' : 'later'}">${p ? '✅ ' : now ? '▶ ' : ''}${STAGE[L].label}</span>`;
+      const p = passed(name, k, L), now = here && st.level === L;   // "now" first: Learn again is done AND next
+      return `<span class="pos-chip pos-chip-${now ? 'now' : p ? 'done' : 'later'}">${now ? '▶ ' : p ? '✅ ' : ''}${STAGE[L].label}</span>`;
     }).join('');
     return `<li class="ip-path-row ip-path-${cls}" style="--part:${partColor(k)}"><span class="ip-path-mark" aria-hidden="true">${mark}</span>` +
       `<span class="ip-path-num" aria-hidden="true">${i + 1}</span><span class="ip-path-name">${a.icon} ${escapeHtml(a.short)}</span>` +
@@ -565,7 +585,7 @@ function pathHTML(name) {
       (here ? '<span class="ip-here-tag">← you are here</span>' : '') + `</li>`;
   }).join('');
   const say = st
-    ? `Your path. You are on ${ACTIVITIES[st.section].short}: ${stageName(st.level)}. ${done} of ${keys.length} parts are done. Each part has Learn, Practice, and Review. Pass the Review to open the next part.`
+    ? `Your path. You are on ${ACTIVITIES[st.section].short}: ${stageName(st.level)}${st.reteach ? ' again' : ''}. ${done} of ${keys.length} parts are done. Each part has Learn, Practice, and Review. Pass the Review to open the next part.`
     : `Your path. You finished all ${keys.length} parts!`;
   return sayBlockHTML('ip-path-say', escapeHtml(say).replace(/^Your path\./, '<strong>Your path.</strong>')) +
     `<p class="ip-path-head">${done} of ${keys.length} parts done</p>` +
@@ -2532,7 +2552,8 @@ const app = {
     }
     // Marcos 10/22: no "do it again" button once the step is passed ("There's no reason for it if they passed").
     const passedHere = reviewMode ? thisTry : passed(this.studentName, this.currentSection, L);
-    btn.classList.toggle('hidden', passedHere);
+    const backToLearn = !reviewMode && !!(st && st.reteach) && st.section === this.currentSection && L === LEVELS[LEVELS.length - 1];
+    btn.classList.toggle('hidden', passedHere || backToLearn);
     btn.querySelector('.again-what').textContent = same ? `🔄 Try the ${stageName(L)} Again` : `🔄 Do This ${stageName(L)} Again`;
     const sub = document.getElementById('again-sub');
     if (sub) sub.textContent = same ? `New sentences. Get ${need} of ${total} right to move on.` : 'Start this one over.';
@@ -2540,6 +2561,7 @@ const app = {
     if (reviewMode) text = '';
     else if (!st) text = '🏆 You finished all five parts! You can do any of them again anytime.';
     // the button is named the way it reads: "Try the Review Again" (reading specialist 10/28)
+    else if (backToLearn) text = `You got ${this.score} of ${total}. Let's go back to ${ACTIVITIES[this.currentSection].short} Learn. The lesson cards will help. Then you will try the Review again, with new sentences. Tap Next.`;
     else if (same) text = `You got ${this.score} of ${total}. Get ${need} of ${total} right to move on. Tap Try the ${stageName(L)} Again. You will get new sentences. You can do it!`;
     else if (thisTry && this._partJustDone()) text = `🎉 You finished ${ACTIVITIES[this.currentSection].short}! Next up: ${stepLabel(st)}. Tap Next.`;
     else if (thisTry && passPct(L)) text = `🔓 You got ${need} or more right! Next up: ${stepLabel(st)}. Tap Next.`;
