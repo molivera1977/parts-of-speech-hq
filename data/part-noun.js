@@ -13,7 +13,7 @@ window.POS_SETS.noun = {
   learn: {
     cards: [
       { title: 'Every Word Has a Job', blocks: [
-        { p: 'The job a word does is called the part of speech.' },
+        { p: 'In a sentence, words do different jobs. We call each job a part of speech.' },
         { p: 'The first job we learn is the noun.' },
         { term: 'noun', means: 'a word that names a person, place, thing, or idea' },
         { words: ['Dad', 'library', 'pencil', 'kindness'], tag: 'n' },
