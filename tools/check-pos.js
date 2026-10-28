@@ -68,6 +68,8 @@ const HIS_SHEETS = [
   'The baby smiled at her mother.', 'Marcus painted a colorful mural.', 'The bees buzzed around the flowers.'
 ].map(s => s.toLowerCase().replace(/[^a-z ]/g, ''));
 
+function cap(w) { return String(w).charAt(0).toUpperCase() + String(w).slice(1); }
+
 /* ── load the site's data like the browser does ── */
 function load(parts, plant) {
   const box = { window: {} };
@@ -105,6 +107,13 @@ function check(W, only) {
       if (/\bdescrib/i.test(t)) bad(where, `uses "describe" before Adjectives teaches it: ${t}`);
     }
     t.toLowerCase().split(/[^a-z']+/).forEach(w => { if (ROSTER.includes(w)) bad(where, `uses a roster name "${w}": ${t}`); });
+    // ── what the reading specialist heard (10/28) ──
+    if (/\blittle words?\b/i.test(t)) bad(where, `says "little word" — a, the, to, at are glue words (Mr. O 10/28): ${t}`);
+    if (/\bwe do not count\b/i.test(t)) bad(where, `says "we do not count" — use the glue-word idea: ${t}`);
+    if (/(^|[\s“"(])-(ed|d|s|es|ly|y|er|est|ing)\b/i.test(t)) bad(where, `writes an ending with a hyphen (the voice may say "minus") — write "the letters e, d": ${t}`);
+    if (/\bread\b/i.test(t)) bad(where, `uses "read" (the voice says "reed" for the past tense) — use another verb: ${t}`);
+    if (partKey !== 'noun' && /\bThe noun is “/.test(t)) bad(where, `"The noun is “…”" right after a note that called the pick a noun sounds like a contradiction — write "Look at the noun “…”": ${t}`);
+    if ((partKey === 'noun' || partKey === 'verb') && /how, when, or where/i.test(t)) bad(where, `"how, when, or where" before adverbs are taught: ${t}`);
     t.split(/(?<=[.!?])\s+/).forEach(line => {
       const n = line.split(/\s+/).filter(x => /[A-Za-z]/.test(x)).length;
       if (n >= 5 && fk(line) > FK_MAX) bad(where, `reads at FK ${fk(line).toFixed(1)} (max ${FK_MAX}): ${line}`);
@@ -136,6 +145,8 @@ function check(W, only) {
           bad(where, `"${tk.word}" comes before a noun here, so it is not an adverb: ${s}`);
         if (/ly$/.test(w) && t !== 'adv' && !['n'].includes(t)) bad(where, `"${tk.word}" ends in -ly but is tagged ${t}: ${s}`);
         if (/^(a|an|the|and|or|but|of|to|for|with|at|on|in|into|under|across|by|from|near|behind|through|after|before)$/.test(w) && t !== 'x') bad(where, `"${tk.word}" must be tagged x: ${s}`);
+        // a wrong pick on an x word is told "“X” is a glue word" — so every x word must be one
+        if (t === 'x' && !W.POS_GLUE.includes(w)) bad(where, `"${tk.word}" is tagged x but is not a glue word (data/pos.js POS_GLUE): ${s}`);
       }
     });
     const key = s.toLowerCase().replace(/[^a-z_ ]/g, '').replace(/\s+/g, ' ').trim();
@@ -165,7 +176,15 @@ function check(W, only) {
         if (kinds.length !== 1) bad(bw, `one kind per block (p / term / words / sent / tip / rows / good / bad), has ${kinds.join(', ') || 'none'}`);
         const k = kinds[0];
         if (k === 'p' || k === 'tip') textRules(bw, b[k], partKey);
-        if (k === 'term') { textRules(bw, `${b.term} means ${b.means}`, partKey); if (b.ex) textRules(bw, b.ex, partKey); }
+        // "💡 Tip:" is shown, not said: a tip that starts "Ask:" is heard as an order with no question (L1 10/28)
+        if (k === 'tip' && /^Ask:/.test(b.tip)) bad(bw, `a tip is heard without "Tip:" — start it "Ask yourself:", not "Ask:": ${b.tip}`);
+        // said the way the site says it: "A noun is a word that …" (a meaning starting "to" keeps "means")
+        if (k === 'term') {
+          const said = /^to /i.test(b.means || '') ? `${b.term} means ${b.means}` : `A ${b.term} is ${b.means}`;
+          textRules(bw, said, partKey);
+          if (!/^to /i.test(b.means || '') && !/^(a|an|the) /i.test(b.means || '')) bad(bw, `a term is said "A ${b.term} is …": the meaning must start "a word that …" or "to …": ${b.means}`);
+          if (b.ex) textRules(bw, b.ex, partKey);
+        }
         if (k === 'words') {
           if (!Array.isArray(b.words) || b.words.length < 3 || b.words.length > 8) bad(bw, 'words: 3–8 example words');
           if (b.tag && !W.POS_TAGS[b.tag]) bad(bw, `unknown tag ${b.tag}`);
@@ -222,6 +241,7 @@ function check(W, only) {
       if (!Array.isArray(words) || words.length < 3 || words.length > 4) bad(where, `needs 3–4 choices (has ${(words || []).length})`);
       if (!Array.isArray(tags) || tags.length !== (words || []).length) { bad(where, 'choiceTags must match the choices one for one'); return; }
       tags.forEach(t => { if (!tagSet.has(t)) bad(where, `unknown choice tag ${t}`); });
+      (words || []).forEach((w, i) => { if (tags[i] === 'x' && !W.POS_GLUE.includes(String(w).toLowerCase())) bad(where, `choice "${w}" is tagged x but is not a glue word`); });
       const right = tags.filter(t => t === it.ask).length;
       if (right !== 1) bad(where, `exactly one choice must be ${it.ask} (has ${right})`);
       if (tags[0] !== it.ask) bad(where, 'the right choice goes FIRST (the site shuffles)');
@@ -239,6 +259,25 @@ function check(W, only) {
         });
       }
     };
+    // after a miss the answer is said AS its job, by the why — "What did Nia do? Nia threw. “Threw” is the verb." — so the
+    // site adds nothing, and the answer is not said three times ("A kitchen is a place. You cook in a kitchen. The noun is
+    // “kitchen”." — reading specialist, third check 10/28)
+    if (['tap', 'mc', 'fill'].includes(it.type) && W.POS_TAGS[it.ask]) {
+      const name = W.POS_TAGS[it.ask].name;
+      const rights = it.type === 'tap'
+        ? W.POS_SPLIT(it.s).filter((t, i) => W.POS_TAG_LIST(it.tags)[i] === it.ask).map(t => t.word)
+        : [(it.choices || [])[0]];
+      const why = String(it.why || '');
+      const esc = w => String(w).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      rights.forEach(w => {
+        if (!new RegExp(`“${esc(w)}[,.]?”[^.?!]*\\b(is|are) (a |an |the )?${name}s?\\b`, 'i').test(why))
+          bad(`${where} why`, `must end by naming the answer as its job — “${cap(w)}” is the ${name}. (has: ${why})`);
+        const n = (why.replace(/\bhow many\b/gi, '').match(new RegExp(`\\b${esc(w)}\\b`, 'gi')) || []).length;
+        if (n > 2) bad(`${where} why`, `says “${w}” ${n} times (max 2): ${why}`);
+      });
+      const words = why.split(/\s+/).filter(Boolean).length;
+      if (words > 22) bad(`${where} why`, `is ${words} words (max 22): ${why}`);
+    }
     switch (it.type) {
       case 'tap': {
         const tags = W.POS_TAG_LIST(it.tags), toks = W.POS_SPLIT(it.s);
@@ -269,6 +308,7 @@ function check(W, only) {
       case 'yesno': {
         if (!['yes', 'no'].includes(it.answer)) bad(where, 'answer must be "yes" or "no"');
         if (!W.POS_TAGS[it.tag] && it.tag !== 'x') bad(where, 'yesno needs the word\'s own tag');
+        if (it.tag === 'x' && !W.POS_GLUE.includes(String(it.word).toLowerCase())) bad(where, `"${it.word}" is tagged x but is not a glue word`);
         if ((it.tag === it.ask) !== (it.answer === 'yes')) bad(where, `answer "${it.answer}" does not match: "${it.word}" is ${it.tag}`);
         wordRules(where, it.word, !it.s);
         if (it.s) {
@@ -309,6 +349,7 @@ function check(W, only) {
           const sw = `${where} slot ${si + 1}`;
           const ft = (slots[si] || { text: '' }).text.replace(/[{}.!?,]/g, '');
           if (sl.tag !== ft) bad(sw, `slot tag ${sl.tag} does not match the frame {${ft}}`);
+          if (sl.why) textRules(`${sw} why`, sl.why, part.key);
           const save = it.ask; it.ask = sl.tag; choiceSet(sl.choices, sl.choiceTags, false, null); it.ask = save;
         });
         const built = it.frame.replace(/\{(n|v|adj|adv)\}/g, () => '');
@@ -406,6 +447,14 @@ const PLANTS = {
   'ly-adjective':     W => { const it = firstOf(W, 'mc'); it.choices[1] = 'friendly'; },
   'too-few':          W => { W.POS_SETS.noun.practice.versions[0].pop(); },
   'yesno-wrong':      W => { const it = firstOf(W, 'yesno'); if (it) it.answer = it.answer === 'yes' ? 'no' : 'yes'; },
+  'little-words':     W => { const it = firstOf(W, 'tap'); it.why = 'The is a little word.'; },
+  'hyphen-ending':    W => { const it = firstOf(W, 'tap'); it.why = 'Many verbs end in -ed.'; },
+  'says-read':        W => { const it = firstOf(W, 'tap'); it.why = 'Dad read the map.'; },
+  'adj-noun-is':      W => { const it = W.POS_SETS.adj.practice.versions[0][0]; it.why = 'The noun is “soup”. What kind of soup? Hot.'; },
+  'x-not-glue':       W => { const it = firstOf(W, 'tap', i => W.POS_TAG_LIST(i.tags).includes('x')); const t = W.POS_TAG_LIST(it.tags); const j = t.indexOf('x');
+                             const toks = W.POS_SPLIT(it.s).map(x => x.text); toks[j] = toks[j].replace(/[A-Za-z]+/, m => /^[A-Z]/.test(m) ? 'Every' : 'every'); it.s = toks.join(' '); },
+  'tip-ask':          W => { const c = W.POS_SETS.noun.learn.cards[0]; c.blocks.push({ tip: 'Ask: is the word a thing?' }); },
+  'why-unlabeled':    W => { const it = firstOf(W, 'tap'); it.why = 'A park is a place. You play at a park.'; },
   'card-says-title':  W => { const c = W.POS_SETS.adj.learn.cards[2]; c.blocks.unshift({ p: 'Many adjectives tell what kind.' }); c.title = 'An Adjective Can Tell What Kind'; }
 };
 function firstOf(W, type, extra) {

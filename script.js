@@ -256,7 +256,8 @@ function sectionBank(section, level, version) {
           frame: it.frame, slotTags: it.slots.map(x => x.tag), right, at: k,
           choices: sl.choices.slice(), answer: 0, fixed: false,
           notes: sl.choices.map((w, i) => window.POS_NOTE(w, sl.choiceTags[i], sl.tag, section)),
-          why: k + 1 === it.slots.length ? (it.why || '') : `“${cap(right[k])}” ${TAGS[sl.tag].job}.` });
+          // a box may have its own why ("“Crab” is the noun. A crab is a living thing." — not the vague job line, L4 10/28)
+          why: sl.why || (k + 1 === it.slots.length ? (it.why || '') : `“${cap(right[k])}” ${TAGS[sl.tag].job}.`) });
       });
     }
   });
@@ -652,7 +653,15 @@ function speakDir(btn) {
    reads just that block, word by word. Letter badges are data-noread. */
 function blockSpans(el) {
   if (!el.querySelector('.wrd')) el.innerHTML = wrapWords(el.innerHTML);
-  return Array.from(el.querySelectorAll('.wrd')).filter(sp => /[A-Za-z0-9]|^_{2,}[.!?,]?$/.test(sp.textContent));
+  const all = Array.from(el.querySelectorAll('.wrd'));
+  const kept = all.filter(sp => /[A-Za-z0-9]|^_{2,}[.!?,]?$/.test(sp.textContent));
+  // a stop that sits after a bold or colored word ("<strong>“carefully”</strong>.") is its own span: it is said with
+  // the word before it, or two sentences run together ("“carefully” Both adverbs …" — reading specialist 10/28)
+  all.forEach((sp, i) => {
+    if (kept.includes(sp) || !/^[.!?,;:]+$/.test(sp.textContent)) return;
+    for (let j = i - 1; j >= 0; j--) if (kept.includes(all[j])) { all[j].dataset.tail = sp.textContent; break; }
+  });
+  return kept;
 }
 /* Light the word the voice is on. The voice says where it is in the text (charIndex); it does NOT signal every
    word — Samantha in Chrome gave no signal for "example:" after "For" (measured in Marcos's Chrome 10/28) — so
@@ -666,7 +675,7 @@ function lightAt(spans, text, charIndex) {
 }
 function spokenOf(spans) {
   return spans.map((s, i) => {
-    let t = s.textContent.replace(/[…]/g, '').replace(/_{2,}/g, 'blank');
+    let t = (s.textContent + (s.dataset && s.dataset.tail && !/[.!?,;:]$/.test(s.textContent) ? s.dataset.tail : '')).replace(/[…]/g, '').replace(/_{2,}/g, 'blank');
     // a word in a box (an example tile) is said on its own with a stop after it — "Dad. Library. Pencil." —
     // not run into the next box like a sentence (Marcos 10/28: "It should not sound like a sentence")
     const tile = s.closest && s.closest('.pos-wordtile');
@@ -717,14 +726,35 @@ function posSentenceHTML(s, tags, show, mark) {
     return i === mark ? `<span class="pos-mark">${text}</span>` : text;
   }).join(' ');
 }
+/* Does the why already say the word AS its job? "“Threw” is the verb." · "“Nia” and “backpack” are nouns." (10/28) */
+function whyLabels(why, word, jobName) {
+  const esc = String(word).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`“${esc}[,.]?”[^.?!]*\\b(is|are) (a |an |the )?${jobName}s?\\b`, 'i').test(String(why || ''));
+}
+/* Letters named in a line ("the letters l, y" · "the letter s") sit in a small box in a clear font: in the reading
+   font a lowercase l looks like a capital I (second listen L10, 10/28). The voice still says "l, y". */
+function letterBoxes(html) {
+  return String(html)
+    .replace(/\b(letters?) ([a-z](?:, [a-z])*)(?=[\s.,!?;:]|$)/g, '$1 <span class="pos-ltrs">$2</span>')
+    .replace(/\b(ends? (?:in|with)) ([a-z](?:, [a-z])*)(?=[.,!?;:]|$)/g, '$1 <span class="pos-ltrs">$2</span>');
+}
+/* A word and what it means, said the way a teacher says it: "A noun is a word that names …" ("noun means a word
+   that …" sounded like a glossary — reading specialist 10/28). A meaning that starts with "to" keeps "means":
+   "Describe means to tell …". */
+function termHTML(term, means) {
+  const m = String(means || '').replace(/\s*$/, '').replace(/([^.!?])$/, '$1.');
+  if (/^to /i.test(m)) return `<strong class="ip-term-word">${escapeHtml(cap(term))}</strong> means ${escapeHtml(m)}`;
+  return `${/^[aeiou]/i.test(term) ? 'An' : 'A'} <strong class="ip-term-word">${escapeHtml(term)}</strong> is ${escapeHtml(m)}`;
+}
 /* "“bear” and “berries”" · "“a”, “b”, and “c”" */
 function listWords(words) {
   return words.length < 3 ? words.join(' and ') : `${words.slice(0, -1).join(', ')}, and ${words[words.length - 1]}`;
 }
 
-/* A block with its speaker on the left: kind is the CSS class, label is read with it */
-function sayBlockHTML(kind, inner, label) {
-  return `<div class="rp-block ${kind}">${SPEAK_HTML}<div class="rp-say">${label ? `<span class="rp-label">${label}</span> ` : ''}${inner}</div></div>`;
+/* A block with its speaker on the left: kind is the CSS class, label is read with it — unless `quiet`: then the
+   label is shown, not said ("💡 Tip:" was heard as "Tip. Ask." — reading specialist 10/28) */
+function sayBlockHTML(kind, inner, label, quiet) {
+  return `<div class="rp-block ${kind}">${SPEAK_HTML}<div class="rp-say">${label ? `<span class="rp-label"${quiet ? ' data-noread' : ''}>${label}</span> ` : ''}${inner}</div></div>`;
 }
 
 /* ── READ-ALOUD INTRO SPEAKS ITSELF ─────────────────
@@ -1041,7 +1071,7 @@ const app = {
   },
 
   /* ── ATTEMPT START ── */
-  // "🔁 Do an activity again" opens (and closes) the full list of activities and levels
+  // "🔁 Do a part again" opens (and closes) the full list of parts and stages
   toggleRedo(open) {
     const list = document.getElementById('redo-list');
     const btn = document.getElementById('redo-toggle');
@@ -1049,7 +1079,7 @@ const app = {
     const show = open == null ? list.classList.contains('hidden') : !!open;
     list.classList.toggle('hidden', !show);
     btn.setAttribute('aria-expanded', String(show));
-    btn.textContent = show ? '✖ Hide the list' : '🔁 Do an activity again';
+    btn.textContent = show ? '✖ Hide the list' : '🔁 Do a part again';
   },
 
   // ▶ Continue: the student's next step in the class's order (see FLOW)
@@ -1219,7 +1249,7 @@ const app = {
     if (q.type !== 'tap') {
       const choices = s.order.map((i, pos) => {
         const right = i === q.answer;
-        const face = `<strong>${'ABCDE'[pos]}.</strong>&nbsp;<span class="choice-text">${choiceHtml(escapeHtml(q.choices[i]))}</span>`;
+        const face = `<strong>${pos + 1}.</strong>&nbsp;<span class="choice-text">${choiceHtml(escapeHtml(q.choices[i]))}</span>`;
         return `<div class="sl-choice-row">${SPEAK_HTML.replace('speakBlock(this)', 'speakEl(this, this.nextElementSibling.querySelector(\'.choice-text\'))')}` +
           `<div class="sl-choice${open && right ? ' sl-right' : ''}" data-orig="${i}">${face}${open && right ? ' <span class="sl-tick" data-noread>✅</span>' : ''}</div></div>`;
       }).join('');
@@ -1576,7 +1606,8 @@ const app = {
     clearTimeout(this._qSayStart); clearTimeout(this._qSayPause);
     const help = document.querySelector('#answers .ip-hot-help .rp-say');
     const withHelp = !!help && !this._tapHelpHeard;
-    const lines = [document.getElementById('question-text'), document.querySelector('#q-show .rp-say'), withHelp ? help : null]
+    // a question about one word with no sentence already says the word: its "The word:" box is not read again (L2 10/28)
+    const lines = [document.getElementById('question-text'), document.querySelector('#q-show .rp-block:not(.pos-oneword) .rp-say'), withHelp ? help : null]
       .filter(Boolean).map(blockSpans).filter(sp => sp.length);
     if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined' || !lines.length) { this._qTimed(); return; }
     const token = this._qSayToken = (this._qSayToken || 0) + 1;
@@ -1690,18 +1721,20 @@ const app = {
   },
 
   _cardBlockHTML(b) {
+    const esc = t => letterBoxes(escapeHtml(t));
     const ex = (cls, icon, text, why) => sayBlockHTML(`rp-ex ${cls}`,
-      `<span class="rp-ex-icon" aria-hidden="true">${icon}</span><span class="rp-ex-text">${escapeHtml(text)}</span><span class="rp-ex-why">${escapeHtml(why)}</span>`);
-    if (b.p)      return sayBlockHTML('rp-p', escapeHtml(b.p));
-    if (b.term)   return sayBlockHTML('ip-term', `<strong class="ip-term-word">${escapeHtml(b.term)}</strong> means ${escapeHtml(b.means || '')}`) +
-                    (b.ex ? sayBlockHTML('ip-term-ex', escapeHtml(b.ex), 'For example:') : '');
+      `<span class="rp-ex-icon" aria-hidden="true">${icon}</span><span class="rp-ex-text">${letterBoxes(escapeHtml(text))}</span><span class="rp-ex-why">${letterBoxes(escapeHtml(why))}</span>`);
+    if (b.p)      return sayBlockHTML('rp-p', esc(b.p));
+    if (b.term)   return sayBlockHTML('ip-term', termHTML(b.term, b.means)) +
+                    (b.ex ? sayBlockHTML('ip-term-ex', esc(b.ex), 'For example:') : '');
     if (b.words)  return sayBlockHTML('pos-words', b.words.map(w =>
                     `<span class="pos-wordtile"${b.tag && TAGS[b.tag] ? ` style="--job:${TAGS[b.tag].color}"` : ''}>${escapeHtml(w)}</span>`).join(' '), 'For example:');
     if (b.sent)   return sayBlockHTML('pos-sentbox', posSentenceHTML(b.sent, b.tags, Array.isArray(b.show) ? b.show : [b.show])) +
-                    (b.say ? sayBlockHTML('rp-p', escapeHtml(b.say)) : '');
-    if (b.tip)    return sayBlockHTML('pos-tip', escapeHtml(b.tip), '💡 Tip:');
+                    (b.say ? sayBlockHTML('rp-p', esc(b.say)) : '');
+    if (b.tip)    return sayBlockHTML('pos-tip', esc(b.tip), '💡 Tip:', true);
+    // a row's badge (1, 2, 3 or N, V, ADJ, ADV) is shown, never said: "N A noun names …" (reading specialist 10/28)
     if (b.rows)   return b.rows.map(r => sayBlockHTML('rp-step',
-                    `<span class="rp-letter"${/[A-Za-z0-9]/.test(r[0]) && !/^\d+$/.test(r[0]) ? '' : ' data-noread'}>${escapeHtml(r[0])}</span>${escapeHtml(r[1])}`)).join('');
+                    `<span class="rp-letter" data-noread>${escapeHtml(r[0])}</span>${esc(r[1])}`)).join('');
     if (b.good)   return ex('rp-good', '✔', b.good, b.why);
     if (b.bad)    return ex('rp-bad', '✘', b.bad, b.why);
     return '';
@@ -1753,7 +1786,7 @@ const app = {
     const btn = document.getElementById('lc-next');
     if (!btn || !btn.disabled) return;
     btn.disabled = false;
-    btn.textContent = this._cardLast ? ({ 1: 'Start the check ➡️', 2: 'Start practicing ➡️', 3: 'Start the Review ➡️' }[this.level || 1] || 'Start ➡️') : 'Next card ➡️';
+    btn.textContent = this._cardLast ? ({ 1: 'Start the questions ➡️', 2: 'Start practicing ➡️', 3: 'Start the Review ➡️' }[this.level || 1] || 'Start ➡️') : 'Next card ➡️';
     const note = document.getElementById('lc-note');
     if (note) note.textContent = '✅ You can go on.';
   },
@@ -1872,7 +1905,7 @@ const app = {
 
     if (q.type === 'tap') {
       // Tap a word: the words are buttons in the sentence; this box says how and shows the pick
-      wrap.innerHTML = sayBlockHTML('ip-hot-help', '👆 Tap one word. Then tap That’s My Answer!') +
+      wrap.innerHTML = sayBlockHTML('ip-hot-help', '👆 After you tap a word, tap That’s My Answer!') +
         `<div class="ip-hot-pick" id="hot-pick" aria-live="polite">No word picked yet.</div>`;
     } else {
       q.choices.forEach((text, i) => {
@@ -1880,7 +1913,7 @@ const app = {
         row.className = 'answer-row';
         const btn = document.createElement('button');
         btn.className = 'answer-btn';
-        btn.innerHTML = `<strong>${['A','B','C','D','E'][i]}.</strong>&nbsp;<span class="choice-text">${choiceHtml(escapeHtml(text))}</span>`;
+        btn.innerHTML = `<strong>${i + 1}.</strong>&nbsp;<span class="choice-text">${choiceHtml(escapeHtml(text))}</span>`;
         btn.onclick = () => this._selectChoice(i, btn, false);
         const speakBtn = document.createElement('button');
         speakBtn.className = 'choice-speak-btn';
@@ -1964,7 +1997,9 @@ const app = {
       const filled = i < q.at || (done && i === q.at);
       const cls = filled ? 'pos-slot pos-slot-full' : i === q.at ? 'pos-slot pos-slot-now' : 'pos-slot';
       const word = filled ? escapeHtml(q.right[i]) : '___';
-      return `<span class="${cls}" style="--job:${T.color}">${word}<span class="pos-job-label" data-noread>${T.name}</span></span>${m[2]}`;
+      // only the words so far and this box are said — "The blank blank blank blank." (reading specialist 10/28)
+      const later = !filled && i > q.at;
+      return `<span class="${cls}" style="--job:${T.color}"${later ? ' data-noread' : ''}>${word}<span class="pos-job-label" data-noread>${T.name}</span></span>${m[2]}`;
     });
     return sayBlockHTML('pos-sentence pos-build', parts.join(' '));
   },
@@ -2080,6 +2115,10 @@ const app = {
       window.speechSynthesis.speak(u);
     };
     btn.onclick = play;
+    // the correction reads itself (a silent "tap Listen" was a direction no one read — reading specialist 10/28);
+    // the button stays to hear it again, or to start it if the voice was stopped
+    clearTimeout(this._fbSay);
+    this._fbSay = setTimeout(() => { if (this.mustHear && btn.isConnected && !(listenJob && listenJob.btn === btn)) play(); }, 300);
   },
 
   /* ── CONFIRM ANSWER ──
@@ -2103,7 +2142,7 @@ const app = {
       this.streak++;
     } else {
       this.streak = 0;
-      this.missedQuestions.push({ id: q.id, q: missText(q), skill: q.skill, yourAnswer: picked, correct: rightText });
+      this.missedQuestions.push({ id: q.id, n: this.currentIndex + 1, q: missText(q), skill: q.skill, yourAnswer: picked, correct: rightText });
     }
 
     if (q.type === 'tap') {
@@ -2158,20 +2197,23 @@ const app = {
     else if (q.type === 'sort' || q.type === 'yesno') line = `<strong>${escapeHtml(cap(right[0]))}</strong>.`;
     else line = `The ${T.name} is <strong>${say(right[0])}</strong>.`;
     const note = !correct && pickIdx != null ? (q.notes && q.notes[pickIdx]) || '' : '';
-    const why = escapeHtml(q.why || '');
+    const why = letterBoxes(escapeHtml(q.why || ''));
     let fbText;
     if (pickIdx == null) fbText = `✅ ${line} ${why}`;   // Slide Mode: the answer, then why
     else if (correct) {
       const picked = q.choices[pickIdx];
-      const is = q.type === 'name' ? `${say(cap(q.word))} is ${TAGS[q.markTag].a} ${TAGS[q.markTag].name}.`
-        : (q.type === 'sort' || q.type === 'yesno') ? '' : `${say(cap(picked))} is ${T.a} ${T.name}.`;
+      // a why that already says "“Hot” is the adjective." makes the site's own line a repeat (10/28)
+      const whySays = (w, tag) => whyLabels(q.why, w, TAGS[tag].name);
+      const is = q.type === 'name' ? (whySays(q.word, q.markTag) ? '' : `${say(cap(q.word))} is ${TAGS[q.markTag].a} ${TAGS[q.markTag].name}.`)
+        : (q.type === 'sort' || q.type === 'yesno') ? '' : (whySays(picked, q.ask) ? '' : `${say(cap(picked))} is ${T.a} ${T.name}.`);
       fbText = `✅ <strong>Correct!</strong> ${is} ${why}`;
     } else {
-      // a name note already says what the word is; a sort's why names the group; a yes/no note says yes or no;
-      // and a why that already names every right word ("What kind of frog? Green.") makes the answer line a repeat
-      const named = right.every(w => new RegExp(`(^|[^a-z])${String(w).toLowerCase()}([^a-z]|$)`).test(String(q.why || '').toLowerCase()));
+      // a name note already says what the word is; a sort's why names the group; a yes/no note says yes or no.
+      // Otherwise the right word is said AS the job — "What did Nia do? Nia threw the ball." never called "threw"
+      // the verb (second listen M1, 10/28) — after the why, unless the why already says "“Threw” is the verb."
+      const named = right.every(w => whyLabels(q.why, w, T.name));
       const fix = q.type === 'name' || q.type === 'sort' || q.type === 'yesno' || named ? '' : line;
-      fbText = `❌ <strong>Not quite.</strong> ${note ? escapeHtml(note) + ' ' : ''}${fix} ${why}`;
+      fbText = `❌ <strong>Not quite.</strong> ${note ? escapeHtml(note) + ' ' : ''}${why} ${fix}`;
     }
     let html = `<div class="rp-block rp-fb">${SPEAK_HTML}<div class="rp-say fb-text">${fbText.replace(/\s+/g, ' ').trim()}</div></div>`;
     if (q.type === 'build' && q.at + 1 === q.slotTags.length) {
@@ -2238,6 +2280,9 @@ const app = {
     else if (pct >= 80) { letter = 'B'; msg = "Great Job! 👏"; }
     else if (pct >= 70) { letter = 'C'; msg = "Good Effort! 💪"; }
     else if (pct >= 60) { letter = 'D'; msg = "Keep Practicing! 🔄"; }
+    // Learn and Practice are done when they are finished: no letter grade, no "study this again" (reading specialist 10/28)
+    const graded = passPct(this.level || 1) > 0;
+    if (!graded) msg = pct >= 80 ? 'Great Job! 👏' : 'You finished! 💪';
 
     this.show('end-screen');
     this._showAgainButton();
@@ -2252,18 +2297,18 @@ const app = {
 
     const pctEl = document.getElementById('final-percent');
     pctEl.innerHTML =
-      `${this.score}/${total}<br><small style="font-size:0.5em;color:${pct>=75?'var(--correct)':'var(--danger)'};">${pct}% · ${letter}</small>`;
+      `${this.score}/${total}<br><small style="font-size:0.5em;color:${!graded || pct>=75?'var(--correct)':'var(--danger)'};">${pct}%${graded ? ` · ${letter}` : ''}</small>`;
     setTimeout(() => pctEl.classList.add('revealed'), 50);
 
     const missedSec = document.getElementById('missed-section');
     if (this.missedQuestions.length) {
       missedSec.classList.remove('hidden');
       document.getElementById('missed-items').innerHTML =
+        // "Question 3", not the code N1102 (codes are for Mr. O — reading specialist 10/28); each one has its 🔊
         this.missedQuestions.map(m =>
           `<div class="missed-item">
-            <div class="mi-label">${m.id}</div>
-            <div style="margin:3px 0;">${plainText(m.q)}</div>
-            ${m.yourAnswer ? `<div>Your answer: <span style="color:var(--danger);">${m.yourAnswer}</span> &nbsp; ✅ Correct: <strong style="color:var(--correct);">${m.correct}</strong></div>` : ''}
+            ${m.n ? `<div class="mi-label">Question ${m.n}</div>` : ''}
+            ${sayBlockHTML('mi-say', `${escapeHtml(plainText(m.q).replace(' — sentence ', ' '))}${m.yourAnswer ? ` <span class="mi-answers">Your answer: <span style="color:var(--danger);">${escapeHtml(m.yourAnswer)}</span>. ✅ Right answer: <strong style="color:var(--correct);">${escapeHtml(m.correct)}</strong>.</span>` : ''}`)}
           </div>`
         ).join('');
     } else {
@@ -2493,12 +2538,23 @@ const app = {
     let text = '';
     if (reviewMode) text = '';
     else if (!st) text = '🏆 You finished all five parts! You can do any of them again anytime.';
-    else if (same) text = `Get ${need} of ${total} right to move on. Tap Try Again. You will get new sentences. You can do it!`;
-    else if (thisTry && this._partJustDone()) text = `🎉 You finished ${ACTIVITIES[this.currentSection].short}! Next up: ${stepLabel(st)}.`;
-    else if (thisTry && passPct(L)) text = `🔓 You got ${need} or more right! Next up: ${stepLabel(st)}.`;
-    else text = `✅ ${stageName(L)} done! Next up: ${stepLabel(st)}.`;
+    // the button is named the way it reads: "Try the Review Again" (reading specialist 10/28)
+    else if (same) text = `You got ${this.score} of ${total}. Get ${need} of ${total} right to move on. Tap Try the ${stageName(L)} Again. You will get new sentences. You can do it!`;
+    else if (thisTry && this._partJustDone()) text = `🎉 You finished ${ACTIVITIES[this.currentSection].short}! Next up: ${stepLabel(st)}. Tap Next.`;
+    else if (thisTry && passPct(L)) text = `🔓 You got ${need} or more right! Next up: ${stepLabel(st)}. Tap Next.`;
+    // a Review missed on a redo: not "Review done!" — say what happened (10/28). "Passed before" only when it is true:
+    // a Review opened out of order (Teacher PIN, a guest) and missed was never passed (second listen, 10/28)
+    else if (!thisTry && passPct(L) && this._passedBefore) text = `You got ${this.score} of ${total} this time. You passed this ${stageName(L)} before, so you can go on. Next up: ${stepLabel(st)}. Tap Next.`;
+    else if (!thisTry && passPct(L)) text = `You got ${this.score} of ${total}. Get ${need} of ${total} to pass this ${stageName(L)}. Your next step is ${stepLabel(st)}. Tap Next.`;
+    else text = `✅ ${stageName(L)} done! Next up: ${stepLabel(st)}. Tap Next.`;
     note.classList.toggle('hidden', !text);
-    note.textContent = text;
+    note.innerHTML = text ? sayBlockHTML('end-say', escapeHtml(text)) : '';
+    clearTimeout(this._endSay);
+    if (text) this._endSay = setTimeout(() => {   // every direction is read first (10/27): the next step is said out loud
+      const say = note.querySelector('.rp-speak');
+      // only while the end screen is still up: a quick ▶ Next must not have its first card cut off
+      if (say && say.isConnected && !document.getElementById('end-screen').classList.contains('hidden') && !note.classList.contains('hidden') && activeSpeakBtn !== say) speakBlock(say);
+    }, 600);
     // the main button goes first
     const first = this._nextStep && !reviewMode ? next : btn;
     if (first && first.parentElement && first.parentElement.firstElementChild !== first) first.parentElement.prepend(first);

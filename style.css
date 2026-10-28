@@ -900,6 +900,10 @@ button.answer-btn.rp-part-btn { display: flex; align-items: center; gap: 12px; f
                font-size:0.95rem; font-weight:700; padding:8px 16px; cursor:pointer; }
 .signout-btn:hover { border-color:#999; color:#333; }
 .again-note { text-align:center; color:#555; font-size:1rem; margin:10px 0 0; }
+/* the end screen's next step: a direction, read aloud by itself, above the buttons it points to (10/28) */
+#again-note .rp-block { align-items: center; max-width: 640px; margin: 14px auto 4px; padding: 8px 14px;
+  background: #f3f8f7; border: 2px solid #cfe3df; border-radius: 12px; }
+#again-note .rp-say { font-size: 1.15rem; font-weight: 600; color: #333; text-align: left; }
 .signout-sub { display:block; font-size:0.8rem; font-weight:600; color:#888; margin-top:2px; }
 
 
@@ -1175,3 +1179,9 @@ li.ip-path-here { background: #f7f3fb; border-color: #8e44ad; border-width: 3px;
 .reading-timer-bar.pos-listening .reading-timer-fill-wrap,
 .reading-timer-bar.pos-listening #reading-count,
 .reading-timer-bar.pos-listening #reading-count + span { display: none; }
+
+/* letters named in a line: a clear font where l is not I (10/28) */
+.pos-ltrs { font-family: ui-monospace, Menlo, Consolas, "Courier New", monospace; font-weight: 700; background: #eef3f2;
+  border: 1px solid #c9d8d5; border-radius: 6px; padding: 0 5px; white-space: nowrap; }
+/* the misses grow to fit: an inner scroll hid misses 3 and 4 and cut a line in half (10/28) */
+.missed-list { max-height: none; overflow: visible; }

@@ -23,7 +23,7 @@ window.POS_TAGS = {
   n:   { name: 'noun',      a: 'a',  label: 'N',   color: '#1d5fd1', job: 'names a person, place, thing, or idea', plain: 'names a person, place, thing, or idea' },
   v:   { name: 'verb',      a: 'a',  label: 'V',   color: '#c62828', job: 'shows an action',  plain: 'shows an action' },
   adj: { name: 'adjective', a: 'an', label: 'ADJ', color: '#1b7a43', job: 'describes a noun', plain: 'tells about a noun' },
-  adv: { name: 'adverb',    a: 'an', label: 'ADV', color: '#7b2fbf', job: 'describes a verb', plain: 'tells how, when, or where' }
+  adv: { name: 'adverb',    a: 'an', label: 'ADV', color: '#7b2fbf', job: 'describes a verb', plain: 'tells more about an action' }
 };
 window.POS_TAG_ORDER = ['n', 'v', 'adj', 'adv'];
 
@@ -78,9 +78,12 @@ window.POS_Q = function (it, partKey) {
   const w = `“${it.word}”`;
   switch (it.type) {
     case 'tap': {
-      // heard aloud, "a noun" and "the noun" sound alike, so a sentence with 2–3 right words says how many (critique 10/27)
+      // heard aloud, "a noun" and "the noun" sound alike, so a sentence with 2–3 right words says how many (critique 10/27),
+      // first, then that one is enough (reading specialist 10/28: "Tap one noun. The sentence has two nouns.")
       const n = window.POS_TAG_LIST(it.tags).filter(t => t === it.ask).length;
-      return n > 1 ? `Tap one ${T.name}. The sentence has ${['', 'one', 'two', 'three'][n] || n} ${T.name}s.` : `Tap the ${T.name} in the sentence.`;
+      if (n === 2) return `This sentence has two ${T.name}s. Tap just one ${T.name}. Either ${T.name} is right.`;
+      if (n > 2) return `This sentence has ${['', 'one', 'two', 'three'][n] || n} ${T.name}s. Tap just one ${T.name}. Any one is right.`;
+      return `Tap the ${T.name} in the sentence.`;
     }
     case 'mc':    return it.s ? `Which word in the sentence is ${T.a} ${T.name}?` : `Which word is ${T.a} ${T.name}?`;
     case 'fill':  return `Which ${T.name} best completes the sentence?`;
@@ -96,10 +99,16 @@ window.POS_Q = function (it, partKey) {
   return '';
 };
 
+/* GLUE WORDS (Marcos 10/28 picked the name): the words that hold a sentence together and are never an answer
+   here — a, an, the, to, at, in … (taught on Nouns card 1). "Little words" meant "short" to a 9-year-old, and
+   Dad, box and hot are short AND answers (reading specialist 10/28). Every word tagged x must be one of these
+   (tools/check-pos.js). */
+window.POS_GLUE = ['a', 'an', 'the', 'and', 'or', 'but', 'to', 'at', 'in', 'on', 'for', 'with', 'of', 'from', 'by',
+  'over', 'under', 'across', 'around', 'after', 'before', 'through', 'onto', 'into', 'up', 'down', 'near', 'behind', 'past'];
+
 /* The note after a wrong pick: what the picked word really is, in one short sentence (critique 10/27: the
    definition is already on the screen in the Remember line). A job not taught yet is described without its
-   name. a, an, the and the other little words are "little words" (taught on Nouns card 1); "a, an, the" point
-   to a noun, and do not count as adjectives (his sheet). */
+   name ("“Slowly” tells more about an action." — never "how, when, or where" before adverbs are taught). */
 window.POS_NOTE = function (word, tag, ask, partKey) {
   const A = window.POS_TAGS[ask];
   if (!A || tag === ask) return '';
@@ -110,9 +119,5 @@ window.POS_NOTE = function (word, tag, ask, partKey) {
       ? `${W} is ${T.a} ${T.name}, not ${A.a} ${A.name}.`
       : `${W} is not ${A.a} ${A.name}. ${W} ${T.plain}.`;
   }
-  if (/^(a|an|the)$/i.test(word)) {
-    if (ask === 'adj') return 'We do not count a, an, or the.';
-    if (ask === 'n') return `${W} is a little word. ${W} points to a noun.`;
-  }
-  return `${W} is a little word, not ${A.a} ${A.name}.`;
+  return `${W} is a glue word. A glue word is never the answer.`;
 };

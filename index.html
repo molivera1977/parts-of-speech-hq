@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=pos4" />
+  <link rel="stylesheet" href="style.css?v=pos6" />
 </head>
 <body>
 <canvas id="confetti-canvas"></canvas>
@@ -67,7 +67,7 @@
 
       <!-- STEP 1 — SIGN IN -->
       <div class="step-card" id="login-step-card">
-        <span class="step-label">Step 1 — Sign In</span>
+        <span class="step-label">First: Sign In</span>
         <div class="login-box">
           <label for="name-select">👤 Select your name:</label>
           <select id="name-select" onchange="app.onNameSelect()">
@@ -93,7 +93,7 @@
       <!-- STEP 2 — CHOOSE A SECTION -->
       <div id="section-select" class="hidden">
         <div class="step-card">
-          <span class="step-label">Step 2 — Tap Continue</span>
+          <span class="step-label">Next: Tap Continue</span>
           <button class="start-btn ip-continue" id="continue-btn" onclick="app.continueFlow()">▶ Continue: <span class="ip-continue-what"></span><span class="form-btn-sub">Your next step is ready.</span></button>
           <p id="all-done-note" class="again-note hidden">🏆 You finished all five parts! You can do any one again.</p>
           <!-- Your path: the five parts, each with Learn · Practice · Review (filled in by script.js) -->
@@ -172,7 +172,7 @@
     <div class="dir-section login-dir">
       <div class="dir-row">
         <button class="speak-btn" onclick="speakDir(this)">🔊</button>
-        <h3 style="margin:0;">👤 Step 1 — Sign In</h3>
+        <h3 style="margin:0;">👤 First: Sign In</h3>
       </div>
       <p class="dir-text">Choose your name from the list, then enter your student number and tap Sign In. Guest students will also enter their first name.</p>
     </div>
@@ -180,7 +180,7 @@
     <div class="dir-section form-dir">
       <div class="dir-row">
         <button class="speak-btn" onclick="speakDir(this)">🔊</button>
-        <h3 style="margin:0;">📚 Step 2 — Tap Continue</h3>
+        <h3 style="margin:0;">📚 Next: Tap Continue</h3>
       </div>
       <p class="dir-text">After you sign in, tap the big Continue button. There are five parts: Nouns, Verbs, Adjectives, Adverbs, and All Four. Each part has three steps: Learn, Practice, and Review. Continue takes you to your next step.</p>
     </div>
@@ -206,7 +206,7 @@
         <button class="speak-btn" onclick="speakDir(this)">🔊</button>
         <h3 style="margin:0;">✅ Pass the Review</h3>
       </div>
-      <p class="dir-text">Get 8 out of 10 right on a Review to open the next part. All Four has 12 questions, so get 9 out of 12. If you get fewer, tap Try Again. You will get new sentences.</p>
+      <p class="dir-text">Get 8 out of 10 right on a Review to open the next part. All Four has 12 questions, so get 9 out of 12. If you get fewer, tap Try the Review Again. You will get new sentences.</p>
     </div>
 
     <div class="dir-section read-dir">
@@ -223,7 +223,7 @@
         <button class="speak-btn" onclick="speakDir(this)">🔊</button>
         <h3 style="margin:0;">⏳ Thinking Timer</h3>
       </div>
-      <p class="dir-text">After you answer, wait 6 seconds. Use that time to read why the answer is right. If you miss a question, tap Listen and hear why. Then the Next button opens.</p>
+      <p class="dir-text">After you answer, wait 6 seconds. Use that time to look at why the answer is right. If you miss a question, the site tells you why out loud. Listen to the end. Then the Next button opens.</p>
       <span class="timer-chip chip-teal">⏳ 6 second pause</span>
     </div>
 
@@ -350,12 +350,13 @@
       <h3>📋 Questions to Review:</h3>
       <div id="missed-items"></div>
     </div>
+    <!-- the next step, said out loud when the screen opens (every direction is read first, 10/27) -->
+    <div id="again-note" class="again-note hidden"></div>
     <div class="end-btns">
       <button class="start-btn hidden" id="next-step-btn" style="background:#8e44ad;box-shadow:0 5px 0 #6c3483;" onclick="app.goNext()">▶ Next: <span class="ip-next-what"></span><span class="form-btn-sub" id="next-sub"></span></button>
       <button class="start-btn" id="again-btn" style="background:#27ae60;box-shadow:0 5px 0 #1e8449;" onclick="app.doAgain()"><span class="again-what">🔄 Do This Again</span><span class="form-btn-sub" id="again-sub">Start this one over.</span></button>
       <button class="start-btn" onclick="app.backToMenu()">📋 Back to My Parts<span class="form-btn-sub">See your path. You stay signed in.</span></button>
     </div>
-    <p id="again-note" class="again-note hidden"></p>
     <div style="text-align:center;margin-top:14px;">
       <button class="signout-btn" onclick="app.restart()">🚪 Sign Out<span class="signout-sub">Only when you are all done. You will go back to the start.</span></button>
     </div>
@@ -422,12 +423,12 @@
 
 <script src="share.js?v=3"></script>
 <script src="form-label.js?v=1"></script>
-<script src="data/pos.js?v=pos2"></script>
-<script src="data/part-noun.js?v=pos3"></script>
-<script src="data/part-verb.js?v=pos2"></script>
-<script src="data/part-adj.js?v=pos2"></script>
-<script src="data/part-adv.js?v=pos2"></script>
-<script src="data/part-all.js?v=pos2"></script>
-<script src="script.js?v=pos7-keys1"></script>
+<script src="data/pos.js?v=pos6"></script>
+<script src="data/part-noun.js?v=pos6"></script>
+<script src="data/part-verb.js?v=pos6"></script>
+<script src="data/part-adj.js?v=pos6"></script>
+<script src="data/part-adv.js?v=pos6"></script>
+<script src="data/part-all.js?v=pos6"></script>
+<script src="script.js?v=pos10-ear3"></script>
 </body>
 </html>

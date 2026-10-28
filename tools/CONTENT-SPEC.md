@@ -16,7 +16,7 @@ His own words (from his 9/15 paper review sheets) are the definitions. Use them 
 | **adverb** | An adverb describes a verb. An adverb tells how, when, or where. | Find the verb. Ask: how? when? where? Many adverbs that tell how end in -ly. |
 
 **Out of scope (never teach, never test):** helping verbs, linking verbs (is, are, was, seems…), past/present/future
-tense words, common vs proper nouns, plurals as a skill, comparing (-er / -est, more / most), "which one?" adjectives
+tense words, common vs proper nouns as a question (the Nouns cards MENTION them — Marcos 10/28: "so it's not so shocking to hear a name called a noun"), plurals as a skill, comparing (-er / -est, more / most), "which one?" adjectives
 (this, that, these, those), pronouns.
 Animals: a noun that names an animal counts as a **thing** ("A frog is a living thing."). Never use an animal in a
 person/place/thing/idea **sort** question, because some teachers say "animal" is its own group.
@@ -53,7 +53,9 @@ Letters: Nouns **N**, Verbs **V**, Adjectives **J**, Adverbs **D**, All Four **A
 
 ### Tags
 Every word of a sentence gets one tag, in order, separated by spaces: **n** noun · **v** verb · **adj** adjective ·
-**adv** adverb · **x** anything else (a, an, the, and, for, to, in, on, with, at, of …).
+**adv** adverb · **x** a glue word (a, an, the, and, for, to, in, on, with, at, of … — the list is `POS_GLUE` in
+data/pos.js; every x word must be on it, because a wrong pick on one is told "“The” is a glue word. A glue word is
+never the answer.").
 `'The tired baker sold warm bread.'` → `'x adj n v adj n'`. Punctuation rides on its word and is not a word.
 **The tags are the answer key.** A wrong tag marks a right answer wrong in front of a child. Get every one right.
 
@@ -61,11 +63,11 @@ Every word of a sentence gets one tag, in order, separated by spaces: **n** noun
 `{ title: 'A Noun Can Name a Place', blocks: [BLOCK, …] }` — 1–6 blocks, ≤ 90 words, ONE idea.
 Blocks (one kind each):
 - `{ p: 'One or two short sentences.' }`
-- `{ term: 'noun', means: 'a word that names a person, place, thing, or idea', ex: 'Dog, school, and pencil are nouns.' }` (shown as "noun means …")
+- `{ term: 'noun', means: 'a word that names a person, place, thing, or idea' }` — said "A noun is a word that names …", so `means` starts "a word that …"; a meaning that starts "to …" is said "Describe means to tell …"
 - `{ words: ['teacher', 'doctor', 'baby', 'Grandpa'], tag: 'n' }` — 3–8 example words, shown as colored tiles ("For example:")
 - `{ sent: 'The tired baker sold warm bread.', tags: 'x adj n v adj n', show: 'n' }` — a sentence with the `show` job's words colored and labeled. `show` may be a list: `['adj', 'n']`. Optional `say: '…'` adds a line under it.
-- `{ tip: 'Ask: Does the word name a person, place, thing, or idea?' }` — shown as 💡 Tip
-- `{ rows: [['1', 'Find the noun.'], ['2', 'Ask: what kind?']] }` — numbered steps
+- `{ tip: 'Ask yourself: Does the word name a person, place, thing, or idea?' }` — shown with 💡 Tip, but "Tip:" is NOT said, so the tip must make sense heard alone ("Ask yourself: …", never "Ask: …")
+- `{ rows: [['1', 'Find the noun.'], ['2', 'Ask yourself: What kind?']] }` — numbered steps; the badge (1, 2 or N, V, ADJ, ADV) is shown, not said
 - `{ good: 'The word “park” is a noun.', why: 'A park is a place.' }` and `{ bad: 'The word “ran” is not a noun.', why: '“Ran” does not name a person, place, thing, or idea.' }` — ✔ / ✘ examples
 
 **Examples lead.** Mr. O: "Examples are everything for 4th graders much more than definitions." Every idea gets
@@ -139,6 +141,8 @@ The answer is the word's tag in the sentence (must be a job taught by now).
   why: 'Your sentence has all four jobs: an adjective, a noun, a verb, and an adverb.' }
 ```
 The right words (first in each slot) must make one good sentence. The wrong words must not fit their box's job.
+A slot may have its own `why` (`{ tag: 'n', …, why: '“Crab” is the noun. A crab is a living thing.' }`); without one
+the site says "“Crab” names a person, place, thing, or idea." The last box uses the item's `why`.
 
 ### Notes (the site writes them)
 After a wrong pick the site says what the picked word really is, from your tags:
@@ -149,6 +153,19 @@ After a wrong pick the site says what the picked word really is, from your tags:
 1–2 short sentences. Explain the right answer with the kid's question: "“Fluffy” tells what kind of puppy." · "“Slowly”
 tells how the turtle moved." · "A library is a place." Name the thing; **never "it", "its", "they", "them"** (the class
 rule — repeat the noun). Do not give away another question's answer.
+
+## Ear rules (reading specialist's listen-through, 10/28 — Mr. O: "Fix all of them" · "Glue words")
+Everything is read aloud. Write for the ear:
+- **Glue words**, never "little words" (to a 9-year-old "little" = short, and Dad, box and hot are short AND answers).
+- Never "The noun is “X”." in an adjective/adverb/All Four why: it sounds like it contradicts the note that just called
+  the pick a noun. Write "Look at the noun “soup.” What kind of soup? Hot. “Hot” is the adjective."
+- Every card example sentence says which word is the job ("“Dribbled” is the verb.").
+- No line repeats the card title or the line before it; no tip repeats the line above it.
+- Lists of example words go in a `words` block (each box gets its own stop), never "girl, city, school" inside a sentence.
+- Never an ending with a hyphen ("-ed", "-ly": the voice may say "minus"): "the letters e, d" · "the letters l, y".
+- Never the word "read" (the voice says "reed" for the past tense).
+- No right answer the child has not been taught (teach "several" on a card before a question uses it).
+- When the why says "“Hot” is the adjective.", the site skips its own "“Hot” is an adjective." on a right answer.
 
 ## Sentence rules (the checker enforces most of these)
 - 3–12 words (most 5–8). Capital first letter, ends with . ! or ?
