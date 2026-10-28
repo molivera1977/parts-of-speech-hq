@@ -20,7 +20,7 @@
 ═══════════════════════════════════════════════════════ */
 
 /* ── CONFIG ─────────────────────────────────────────── */
-const REVIEW_OPEN   = false;     // built 10/27, LOCKED until Marcos says open. false = students locked out; only Teacher Access works.
+const REVIEW_OPEN   = true;      // built 10/27, OPEN 10/28 (Marcos: "open"). false = students locked out; only Teacher Access works.
 const SHARE_MODE    = !!window.SHARE_MODE;   // set by share.js — a visitor's link, never a student's
 const INSTRUCT_SECS = 20;
 const READ_SECS     = 8;         // one short sentence a question: 8 s to read the question, the sentence, and the choices
