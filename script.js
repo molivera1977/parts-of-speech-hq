@@ -2002,10 +2002,16 @@ const app = {
     if (!btn || !box) return;
     if (activeSpeakBtn === btn) { stopActiveSpeech(); return; }
     stopActiveSpeech();
+    // Stopped and 🔊 again within the 0.9 s pause (10/29): the stopped reading must not go on, or its next line
+    // comes in on top (said twice). Its waiting line is dropped, and a line of it that reports in late (Chrome
+    // calls a cut-off line "interrupted"; some voices only go quiet, seen a moment later) is not taken as finished.
+    clearTimeout(this._cardPause);
+    const token = this._cardSayToken = (this._cardSayToken || 0) + 1;
     const lines = Array.from(box.querySelectorAll('.rp-say')).map(blockSpans).filter(s => s.length);
     if (!lines.length) { this._openCardNext(); return; }
     activeSpeakBtn = btn; btn.textContent = '⏹';
     const sayLine = k => {
+      if (token !== this._cardSayToken) return;   // a newer reading of the card has begun
       if (activeSpeakBtn !== btn) {   // stopped before the end: Next stays shut until the whole card is heard
         const note = document.getElementById('lc-note');
         const next = document.getElementById('lc-next');
@@ -2025,6 +2031,7 @@ const app = {
         lightAt(spans, u.text, e.charIndex);
       };
       u.onend = () => {
+        if (token !== this._cardSayToken) return;
         box.querySelectorAll('.wrd.hl').forEach(el => el.classList.remove('hl'));
         this._cardPause = setTimeout(() => sayLine(k + 1), LINE_PAUSE_MS);
       };
