@@ -797,6 +797,10 @@ function sayBlockHTML(kind, inner, label, quiet) {
    (app.show) cancels the speech. */
 const INTRO_SAY = { '🔊': 'the speaker button', '⏹': 'the stop button', '—': ',' };
 const READ_RATE = 0.82;
+/* The pause between one line and the next — QPS's lesson pause (qps-literacy-hub/practice.js PAUSE.line = 900 ms).
+   Marcos 10/28: "the speed still sounds faster than on QPS" — same voice, same 0.82, but lines 0.25 s apart ran
+   together. */
+const LINE_PAUSE_MS = 900;
 /* THE SAME VOICE AS QPS (Marcos 10/28: "why can't this site talk like QPS" · "the reading speed also sounds different
    on QPS"): every reading asks for English and uses the device's own default English voice, picked the way the QPS
    Literacy Hub picks it (qps-literacy-hub/readaloud.js). Asking only for "en-US" let the browser choose a different
@@ -1697,7 +1701,7 @@ const app = {
       };
       u.onend = () => {
         spans.forEach(sp => sp.classList.remove('hl'));
-        this._qSayPause = setTimeout(() => sayLine(k + 1), 250);
+        this._qSayPause = setTimeout(() => sayLine(k + 1), LINE_PAUSE_MS);
       };
       addHighlightFallback(u, spans);
       window.speechSynthesis.speak(u);
@@ -1872,7 +1876,7 @@ const app = {
       };
       u.onend = () => {
         box.querySelectorAll('.wrd.hl').forEach(el => el.classList.remove('hl'));
-        this._cardPause = setTimeout(() => sayLine(k + 1), 250);
+        this._cardPause = setTimeout(() => sayLine(k + 1), LINE_PAUSE_MS);
       };
       addHighlightFallback(u, spans);
       window.speechSynthesis.speak(u);
