@@ -696,6 +696,13 @@ function lightAt(spans, text, charIndex) {
 function spokenOf(spans) {
   return spans.map((s, i) => {
     let t = (s.textContent + (s.dataset && s.dataset.tail && !/[.!?,;:]$/.test(s.textContent) ? s.dataset.tail : '')).replace(/[…]/g, '').replace(/_{2,}/g, 'blank');
+    // a letter in a letter box is said as its name, with no stop between letters: "the letters L Y", not
+    // "the letters l, y" (Marcos 10/28: "the saying of ly sounds strange")
+    const ltrs = s.closest && s.closest('.pos-ltrs');
+    if (ltrs) {
+      t = t.replace(/^[a-z]/i, c => c.toUpperCase());
+      if (spans[i + 1] && spans[i + 1].closest('.pos-ltrs') === ltrs) t = t.replace(/,$/, '');   // "L Y", not "L, Y"
+    }
     // a word in a box (an example tile) is said on its own with a stop after it — "Dad. Library. Pencil." —
     // not run into the next box like a sentence (Marcos 10/28: "It should not sound like a sentence")
     const tile = s.closest && s.closest('.pos-wordtile');

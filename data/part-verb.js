@@ -43,16 +43,16 @@ window.POS_SETS.verb = {
       { title: 'Verbs Can Look Different',
         blocks: [
           { words: ['jumped', 'kicked', 'ran', 'ate', 'swam', 'threw'], tag: 'v' },
-          { p: '“Jumped” and “kicked” end in the letters e, d. Many verbs do not end in e, d.' },
+          { p: '“Jumped” ends in the letters e, d, but “ran” does not.' },
           { sent: 'Sofia swam to the wall.', tags: 'n v x x n', show: 'v', say: 'What did Sofia do? Sofia swam. “Swam” is the verb.' },
           { sent: 'Rosa ate an orange after the game.', tags: 'n v x n x x n', show: 'v', say: 'What did Rosa do? Rosa ate. “Ate” is the verb.' },
           { tip: 'The end of a word can trick you. Ask yourself: What did that person or thing do?' }
         ] },
       { title: 'Watch Out for S at the End',
         blocks: [
-          { p: 'Some verbs end in the letter s. Some nouns do too.' },
+          { p: 'Some verbs end in the letter s, and some nouns do too.' },
           { sent: 'Ben skips across the gym.', tags: 'n v x x n', show: 'v', say: 'What does Ben do? Ben skips. “Skips” is the verb.' },
-          { sent: 'Grace kicks the cones.', tags: 'n v x n', show: ['n', 'v'], say: '“Kicks” and “cones” both end in s. “Kicks” is the verb. “Cones” is a noun.' },
+          { sent: 'Grace kicks the cones.', tags: 'n v x n', show: ['n', 'v'], say: '“Kicks” and “cones” both end in s, but only “kicks” is the verb. “Cones” is a noun.' },
           { tip: 'An s at the end can trick you. Ask yourself: What does the person or thing do?' }
         ] },
       { title: 'Noun or Verb?',

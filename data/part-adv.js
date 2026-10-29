@@ -31,7 +31,7 @@ window.POS_SETS.adv = {
         { sent: 'Mom hummed softly.', tags: 'n v adv', show: 'adv', say: '“Softly” tells how Mom hummed.' },
         { sent: 'Leo quickly washed the dishes.', tags: 'n adv v x n', show: 'adv', say: '“Quickly” tells how Leo washed the dishes.' },
         { sent: 'Kai brushed the cat gently.', tags: 'n v x n adv', show: 'adv', say: '“Gently” tells how Kai brushed the cat.' },
-        { tip: 'Many adverbs that tell how end in the letters l, y. Watch out: “jelly” and “family” end in the letters l, y too. Both words are nouns. Ask yourself: Does the word tell how?' }
+        { tip: 'Many adverbs end in the letters l, y, like “slowly.” Watch out: “jelly” and “family” end in the letters l, y too. Both words are nouns. Ask yourself: Does the word tell how?' }
       ] },
       { title: 'Adverbs That Tell When', blocks: [
         { p: 'Ask yourself: When did the action happen?' },
