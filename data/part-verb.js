@@ -7,7 +7,7 @@
    about? What did that person or thing do?"); at least half the right words in
    every Practice/Review pick-a-word have no -ed (swam, ate, dug …), and some
    wrong choices end in -ed (bed, hundred), so the -ed ending alone never answers.
-   10/28 listen-through fixes: endings are said "the letters e, d" / "the letter s" (no
+   10/28 listen-through fixes: endings are said "the letters ed" / "the letter s" (no
    hyphen), every card sentence names its verb, tips say "Ask yourself:", the Action
    Test bridges a past word ("kicked" → kick), the s card shows "kicks" vs "cones".
    Format and rules: tools/CONTENT-SPEC.md · check: node tools/check-pos.js verb
@@ -43,7 +43,7 @@ window.POS_SETS.verb = {
       { title: 'Verbs Can Look Different',
         blocks: [
           { words: ['jumped', 'kicked', 'ran', 'ate', 'swam', 'threw'], tag: 'v' },
-          { p: '“Jumped” ends in the letters e, d, but “ran” does not.' },
+          { p: '“Jumped” ends in the letters ed, but “ran” does not.' },
           { sent: 'Sofia swam to the wall.', tags: 'n v x x n', show: 'v', say: 'What did Sofia do? Sofia swam. “Swam” is the verb.' },
           { sent: 'Rosa ate an orange after the game.', tags: 'n v x n x x n', show: 'v', say: 'What did Rosa do? Rosa ate. “Ate” is the verb.' },
           { tip: 'The end of a word can trick you. Ask yourself: What did that person or thing do?' }

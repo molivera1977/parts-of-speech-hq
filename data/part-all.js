@@ -52,7 +52,7 @@ window.POS_SETS.all = {
           ] },
           { sent: 'Leo wrapped six gifts neatly.', tags: 'n v adj n adv', show: ['adj', 'n', 'v', 'adv'],
             say: '“Leo” and “gifts” are the nouns. What did Leo do? Leo wrapped. “Wrapped” is the verb. How many gifts? Six. “Six” is the adjective. How did Leo wrap the gifts? Neatly. “Neatly” is the adverb.' },
-          { tip: 'Many adverbs end in the letters l, y, like “neatly.”' }
+          { tip: 'Many adverbs end in the letters ly, like “neatly.”' }
         ] },
       { title: 'Check Each Word',
         blocks: [

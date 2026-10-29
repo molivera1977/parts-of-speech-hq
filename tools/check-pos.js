@@ -111,7 +111,8 @@ function check(W, only) {
     if (/\blittle words?\b/i.test(t)) bad(where, `says "little word" — a, the, to, at are glue words (Mr. O 10/28): ${t}`);
     if (/\bwe do not count\b/i.test(t)) bad(where, `says "we do not count" — use the glue-word idea: ${t}`);
     if (/(^|[\s“"(])-(ed|d|s|es|ly|y|er|est|ing)\b/i.test(t)) bad(where, `writes an ending with a hyphen (the voice may say "minus") — write "the letters e, d": ${t}`);
-    if (/\b(letters?|ends? (in|with)) [a-z](, [a-z])*[.!?]/i.test(t)) bad(where, `ends a sentence on a named letter — the voice reads "Y." like an initial and runs on (Marcos 10/28): "…the letters l, y, like “slowly.”": ${t}`);
+    if (/\b(letters?|ends? (in|with)) (ly|ed|es|s|d|y)[.!?]/i.test(t)) bad(where, `ends a sentence on named letters — the voice reads "L-Y." like an initial and runs on (Marcos 10/28): "…the letters ly, like “slowly.”": ${t}`);
+    if (/\bletters? [a-z], [a-z]\b/i.test(t)) bad(where, `writes letters with commas — write them together like QPS's "tch": "the letters ly" (Marcos 10/28: "do we need the comma?"): ${t}`);
     if (/\bread\b/i.test(t)) bad(where, `uses "read" (the voice says "reed" for the past tense) — use another verb: ${t}`);
     if (partKey !== 'noun' && /\bThe noun is “/.test(t)) bad(where, `"The noun is “…”" right after a note that called the pick a noun sounds like a contradiction — write "Look at the noun “…”": ${t}`);
     if ((partKey === 'noun' || partKey === 'verb') && /how, when, or where/i.test(t)) bad(where, `"how, when, or where" before adverbs are taught: ${t}`);
@@ -455,7 +456,8 @@ const PLANTS = {
   'x-not-glue':       W => { const it = firstOf(W, 'tap', i => W.POS_TAG_LIST(i.tags).includes('x')); const t = W.POS_TAG_LIST(it.tags); const j = t.indexOf('x');
                              const toks = W.POS_SPLIT(it.s).map(x => x.text); toks[j] = toks[j].replace(/[A-Za-z]+/, m => /^[A-Z]/.test(m) ? 'Every' : 'every'); it.s = toks.join(' '); },
   'tip-ask':          W => { const c = W.POS_SETS.noun.learn.cards[0]; c.blocks.push({ tip: 'Ask: is the word a thing?' }); },
-  'letter-ends-sentence': W => { const it = firstOf(W, 'tap'); it.why = 'Many verbs end in the letters e, d. Look again.'; },
+  'letter-ends-sentence': W => { const it = firstOf(W, 'tap'); it.why = 'Many verbs end in the letters ed. Look again.'; },
+  'letters-with-commas':  W => { const it = firstOf(W, 'tap'); it.why = 'Many adverbs end in the letters l, y, like “slowly.”'; },
   'why-unlabeled':    W => { const it = firstOf(W, 'tap'); it.why = 'A park is a place. You play at a park.'; },
   'card-says-title':  W => { const c = W.POS_SETS.adj.learn.cards[2]; c.blocks.unshift({ p: 'Many adjectives tell what kind.' }); c.title = 'An Adjective Can Tell What Kind'; }
 };

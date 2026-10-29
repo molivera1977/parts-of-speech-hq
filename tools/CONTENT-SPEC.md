@@ -162,7 +162,7 @@ Everything is read aloud. Write for the ear:
 - Every card example sentence says which word is the job ("“Dribbled” is the verb.").
 - No line repeats the card title or the line before it; no tip repeats the line above it.
 - Lists of example words go in a `words` block (each box gets its own stop), never "girl, city, school" inside a sentence.
-- Never an ending with a hyphen ("-ed", "-ly": the voice may say "minus"): "the letters e, d" · "the letters l, y".
+- Never an ending with a hyphen ("-ed", "-ly": the voice may say "minus"): "the letters ed" · "the letters ly".
 - Never the word "read" (the voice says "reed" for the past tense).
 - No right answer the child has not been taught (teach "several" on a card before a question uses it).
 - When the why says "“Hot” is the adjective.", the site skips its own "“Hot” is an adjective." on a right answer.

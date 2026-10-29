@@ -7,7 +7,7 @@
    last word); some right answers have no -ly; "never" is gone and "always" is never taught
    as a when word (many programs call it "how often"); the -ly hint lives on the cards only.
    10/28 reading specialist (listen-through): card 1 opens with the definition + "ad-VERB has verb
-   inside"; endings are said "the letters l, y" (a hyphen may be read "minus"); "always" is gone
+   inside"; endings are said "the letters ly" (a hyphen may be read "minus"); "always" is gone
    from every question (never taught); card 5 says the verb first; no "read" (voice says "reed");
    tips say "Ask yourself:"; adjective whys say "Look at the noun …", never "The noun is …".
    Format and rules: tools/CONTENT-SPEC.md · check: node tools/check-pos.js adv
@@ -31,7 +31,7 @@ window.POS_SETS.adv = {
         { sent: 'Mom hummed softly.', tags: 'n v adv', show: 'adv', say: '“Softly” tells how Mom hummed.' },
         { sent: 'Leo quickly washed the dishes.', tags: 'n adv v x n', show: 'adv', say: '“Quickly” tells how Leo washed the dishes.' },
         { sent: 'Kai brushed the cat gently.', tags: 'n v x n adv', show: 'adv', say: '“Gently” tells how Kai brushed the cat.' },
-        { tip: 'Many adverbs end in the letters l, y, like “slowly.” Watch out: “jelly” and “family” end in the letters l, y too. Both words are nouns. Ask yourself: Does the word tell how?' }
+        { tip: 'Many adverbs end in the letters ly, like “slowly.” Watch out: “jelly” and “family” end in the letters ly too. Both words are nouns. Ask yourself: Does the word tell how?' }
       ] },
       { title: 'Adverbs That Tell When', blocks: [
         { p: 'Ask yourself: When did the action happen?' },
