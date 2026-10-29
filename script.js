@@ -319,8 +319,19 @@ let loggedInName     = '';
 let unlockedSections = new Set();
 let pinModalCallback = null;
 let activeSpeakBtn   = null;
-let reviewMode       = false;
-let reviewAutoRun    = false;
+let reviewMode       = false;   // the old auto-answer walkthrough; Teacher Access no longer opens it (10/28)
+/* TEACHER SCREEN (Marcos 10/28: "teacher mode is a little bit of a mess" · auto-run is not needed any more).
+   One screen instead of a chain of pop-ups: the PIN once, then a part, a stage and a version on buttons, then
+   👀 Try it as a student · 🖥️ Slide Mode · ✅ Answer key. The PIN holds in this tab until ✕ Exit teacher.
+   Try it as a student opens the guest view (share.js: nothing reaches the sheet, its own storage) on
+   ?teach=<part>.<stage>.<version>, starts there, and ⏩ Skip the wait opens whatever is shut. */
+const TEACHER_KEY      = 'pos_teacher';        // sessionStorage: '1' = the Teacher PIN was given in this tab
+const TEACHER_PICK_KEY = 'pos_teacher_pick';   // sessionStorage: the last part, stage and version picked
+const TEACH = (() => {
+  const m = /^([a-z]+)\.(\d+)\.(\d+)$/.exec(new URLSearchParams(location.search).get('teach') || '');
+  return SHARE_MODE && m ? { section: m[1], level: Number(m[2]), version: Number(m[3]) } : null;
+})();
+function teacherUnlocked() { try { return sessionStorage.getItem(TEACHER_KEY) === '1'; } catch (e) { return false; } }
 
 function letterGradeStudent(pct) {
   if (pct >= 97) return 'A+';
@@ -966,7 +977,7 @@ const app = {
 
   /* ── screens ── */
   show(id) {
-    ['start-screen','readaloud-screen','directions-screen','quiz-screen','end-screen','scoreboard-screen','slide-screen']
+    ['start-screen','readaloud-screen','directions-screen','quiz-screen','end-screen','scoreboard-screen','slide-screen','teacher-screen','key-screen']
       .forEach(s => document.getElementById(s).classList.add('hidden'));
     document.getElementById(id).classList.remove('hidden');
     syncFormLabel(id);
@@ -988,6 +999,8 @@ const app = {
     this.show('start-screen');
     document.getElementById('welcome-panel').classList.remove('hidden');
     document.getElementById('student-login-panel').classList.add('hidden');
+    if (TEACH) this._teachReady();
+    else if (location.hash === '#teacher' && teacherUnlocked()) this.openTeacher();
   },
 
   /* ── READ ALOUD INTRO ── */
@@ -1167,40 +1180,180 @@ const app = {
     this.startSession(section, level);
   },
 
-  /* ── TEACHER REVIEW MODE ── */
+  /* ── TEACHER SCREEN (see TEACHER_KEY) ── */
   promptTeacherReview() {
-    const pin = prompt('Enter Teacher PIN to access Review Mode:');
-    if (pin !== '9377') { if (pin !== null) alert('Incorrect PIN.'); return; }
-    this.studentName = 'Mr. O (Teacher)';
-    reviewMode = true;
-    localStorage.removeItem(STORAGE_KEY);
-    this._showReviewPicker();
+    if (teacherUnlocked()) { this.openTeacher(); return; }
+    this.showPinModal('🧑‍🏫 Teacher', 'Enter the Teacher PIN.', () => {
+      try { sessionStorage.setItem(TEACHER_KEY, '1'); } catch (e) {}
+      this.openTeacher();
+    });
   },
 
-  _showReviewPicker() {
+  _teacherPick() {
+    let p = null;
+    try { p = JSON.parse(sessionStorage.getItem(TEACHER_PICK_KEY) || 'null'); } catch (e) {}
     const keys = Object.keys(ACTIVITIES);
-    const section = prompt('Choose a part to review:\n' +
-      keys.map((k, i) => `${i + 1} — ${ACTIVITIES[k].label}`).join('\n') + `\n\nEnter 1 to ${keys.length}:`);
-    const map = Object.fromEntries(keys.map((k, i) => [String(i + 1), k]));
-    if (!map[section]) { alert('Invalid choice.'); reviewMode = false; return; }
-    const mode = prompt('Choose review mode:\n1 — Manual (you tap Next each question)\n2 — Auto-run (fully automatic)\n3 — Slide Mode (big slides for the board; tap to show each answer)\n\nEnter 1, 2 or 3:');
-    if (mode !== '1' && mode !== '2' && mode !== '3') { alert('Invalid choice.'); reviewMode = false; return; }
-    reviewAutoRun = (mode === '2');
-    const lv = prompt('Which stage?\n' + LEVELS.map(L => `${L} — ${stageName(L)}`).join('\n') +
-      `\n\nEnter ${LEVELS[0]} to ${LEVELS[LEVELS.length - 1]}:`, '1');
-    const level = Number(lv);
-    if (!LEVELS.includes(level)) { alert('Invalid choice.'); reviewMode = false; return; }
-    let version = 1;
-    const count = versionCount(map[section], level);
-    if (count > 1) {
-      version = Number(prompt(`Which version? (each one has its own sentences)\nEnter 1 to ${count}:`, '1'));
-      if (!(version >= 1 && version <= count)) { alert('Invalid choice.'); reviewMode = false; return; }
-    }
-    this._reviewLevel = level;
-    this._reviewVersion = version;
-    if (mode === '3') { this.openSlides(map[section], level, version); return; }
-    this.startSession(map[section], level);
+    const section = p && ACTIVITIES[p.section] ? p.section : keys[0];
+    const level = p && LEVELS.includes(p.level) ? p.level : LEVELS[0];
+    const version = p && p.version >= 1 && p.version <= versionCount(section, level) ? p.version : 1;
+    return { section, level, version };
   },
+
+  openTeacher() {
+    stopActiveSpeech();
+    this._renderTeacher(this._teacherPick());
+    this.show('teacher-screen');
+  },
+
+  /* A part, a stage, a version: one row of buttons each; the picked one is filled in. */
+  teacherPick(change) {
+    const t = Object.assign(this._teacherPick(), change);
+    if (!(t.version >= 1 && t.version <= versionCount(t.section, t.level))) t.version = 1;
+    this._renderTeacher(t);
+  },
+
+  _renderTeacher(t) {
+    try { sessionStorage.setItem(TEACHER_PICK_KEY, JSON.stringify(t)); } catch (e) {}
+    const btn = (on, label, change) =>
+      `<button type="button" class="t-pick${on ? ' on' : ''}" aria-pressed="${on}" onclick='app.teacherPick(${JSON.stringify(change)})'>${label}</button>`;
+    document.getElementById('t-parts').innerHTML = Object.keys(ACTIVITIES)
+      .map(k => btn(k === t.section, escapeHtml(ACTIVITIES[k].label), { section: k })).join('');
+    document.getElementById('t-stages').innerHTML = LEVELS
+      .map(L => btn(L === t.level, `${(STAGE[L] || {}).icon || ''} ${escapeHtml(stageName(L))}`, { level: L })).join('');
+    const count = versionCount(t.section, t.level);
+    document.getElementById('t-version-row').classList.toggle('hidden', count < 2);
+    document.getElementById('t-versions').innerHTML = Array.from({ length: count }, (_, i) => i + 1)
+      .map(v => btn(v === t.version, `Version ${v}`, { version: v })).join('');
+    document.getElementById('t-picked').textContent = `${ACTIVITIES[t.section].label} · ${levelLabel(t.level, t.version)}`;
+  },
+
+  /* 👀 Try it as a student: the guest view, started on this part, stage and version */
+  teacherTry() {
+    const t = this._teacherPick();
+    location.href = `${location.pathname}${window.SHARE_LINK}&teach=${t.section}.${t.level}.${t.version}`;
+  },
+
+  teacherSlides() {
+    const t = this._teacherPick();
+    this.openSlides(t.section, t.level, t.version);
+  },
+
+  /* ✅ Answer key: every question of the stage and version, the right answer marked, and why */
+  teacherKey() {
+    const t = this._teacherPick();
+    const bank = sectionBank(t.section, t.level, t.version);
+    document.getElementById('key-title').textContent = `✅ Answer key · ${ACTIVITIES[t.section].label} · ${levelLabel(t.level, t.version)}`;
+    document.getElementById('key-body').innerHTML = bank.map((q, k) => {
+      const choices = q.type === 'tap' ? '' : `<ol class="key-choices">${q.choices.map((c, i) =>
+        `<li class="${i === q.answer ? 'key-right' : ''}">${choiceHtml(escapeHtml(c))}${i === q.answer ? ' ✅' : ''}</li>`).join('')}</ol>`;
+      return `<div class="key-q"><p class="sl-where">Question ${k + 1} of ${bank.length}</p>` +
+        `<p class="key-ask">${escapeHtml(q.q)}</p>${this._showHTML(q, { answered: true, section: t.section })}${choices}` +
+        `<div class="key-why">${this._answerHTML(q, true, null)}</div></div>`;
+    }).join('');
+    this.show('key-screen');
+  },
+
+  backToTeacher() {
+    if (TEACH) { location.href = `${location.pathname}#teacher`; return; }
+    this.openTeacher();
+  },
+
+  exitTeacher() {
+    try { sessionStorage.removeItem(TEACHER_KEY); } catch (e) {}
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+    this.exitReviewMode();
+  },
+
+  /* A Try-it link: signed in as the guest, one tap to start (the tap also lets the device speak) */
+  _teachReady() {
+    const t = TEACH;
+    if (!ACTIVITIES[t.section] || !LEVELS.includes(t.level) || !(t.version >= 1 && t.version <= versionCount(t.section, t.level))) return;
+    this._shareSignIn();   // the guest, with the guest's path behind it (Back to My Parts at the end)
+    document.getElementById('teach-bar').classList.remove('hidden');
+    document.body.classList.add('teach-on');
+    document.getElementById('welcome-panel').classList.add('hidden');
+    document.getElementById('teach-what').textContent = `${ACTIVITIES[t.section].label} · ${levelLabel(t.level, t.version)}`;
+    document.getElementById('teach-ready').classList.remove('hidden');
+  },
+
+  teachStart() {
+    document.getElementById('teach-ready').classList.add('hidden');
+    this._teachVersion = TEACH.version;
+    this.startSession(TEACH.section, TEACH.level);
+  },
+
+  /* ⏩ Skip the wait: opens what a student is waiting on right now — a lesson card's Next, the question's
+     locked choices, the explanation to hear and the pause after an answer, the score screen's lock. */
+  teacherSkipWait() {
+    stopActiveSpeech();
+    this._openCardNext();
+    if (this._qLocked && this._qOpen) this._qOpen();
+    if (this.nextInterval) {
+      clearInterval(this.nextInterval);
+      this.nextInterval = null;
+      document.getElementById('next-timer-bar').classList.add('hidden');
+      this.soakDone = true;
+    }
+    if (this.mustHear) {
+      this.mustHear = false;
+      const listen = document.getElementById('listen-btn');
+      if (listen) { listen.disabled = false; listen.classList.add('heard'); listen.textContent = '🔊 Listen again'; }
+      const note = document.getElementById('listen-note');
+      if (note) note.textContent = '';
+    }
+    if (this.questionLocked && !document.getElementById('quiz-screen').classList.contains('hidden')) {
+      this.soakDone = true;
+      this._maybeShowNext();
+    }
+    if (this._scoreUnlock) this._scoreUnlock();
+  },
+
+  /* Go anywhere in the run (Marcos 10/28: "teacher mode should be able to go anywhere" · "besides a drop
+     down menu, have an arrow right or left to skip forward or backward"): the stage's lesson cards, then
+     its questions. A question skipped is not scored; the end screen counts only what was answered. */
+  _teachList() {
+    const cards = (stageData(this.currentSection, this.level || 1).cards || []);
+    return cards.map((c, i) => ({ kind: 'card', i, label: `📘 Card ${i + 1}: ${c.title}` }))
+      .concat((this.currentBank || []).map((q, i) => ({ kind: 'q', i, label: `❓ Question ${i + 1} of ${this.currentBank.length}` })));
+  },
+
+  _teachAt() {
+    const list = this._teachList();
+    const inCards = document.getElementById('quiz-screen').classList.contains('card-mode');
+    return list.findIndex(it => inCards ? it.kind === 'card' && it.i === this._cardAt : it.kind === 'q' && it.i === this.currentIndex);
+  },
+
+  _teachSync() {
+    const list = this._teachList();
+    const jump = document.getElementById('teach-jump');
+    document.getElementById('teach-bar').classList.add('started');
+    if (jump.options.length !== list.length) jump.innerHTML = list.map((it, k) => `<option value="${k}">${escapeHtml(it.label)}</option>`).join('');
+    const at = this._teachAt();
+    jump.value = String(at);
+    document.getElementById('teach-prev').disabled = at <= 0;
+    document.getElementById('teach-next').disabled = at < 0 || at >= list.length - 1;
+  },
+
+  teachGo(k) {
+    const it = this._teachList()[k];
+    if (!it) return;
+    stopActiveSpeech();
+    if (this.readInterval) { clearInterval(this.readInterval); this.readInterval = null; }
+    clearTimeout(this._qSayStart); clearTimeout(this._qSayPause);
+    if (this.nextInterval) { clearInterval(this.nextInterval); this.nextInterval = null; }
+    if (document.getElementById('quiz-screen').classList.contains('hidden')) this.show('quiz-screen');
+    if (it.kind === 'card') {
+      if (!document.getElementById('quiz-screen').classList.contains('card-mode')) this._showCards();
+      this._cardAt = it.i;
+      this._renderCard();
+    } else {
+      if (!(this.cardsSeen || []).includes(0)) (this.cardsSeen = this.cardsSeen || []).push(0);
+      this.currentIndex = it.i;
+      this.renderQuestion();
+    }
+  },
+
+  teachStep(d) { const at = this._teachAt(); if (at >= 0) this.teachGo(at + d); },
 
   /* ── SLIDE MODE (Teacher Access) ──
      Marcos 10/19 (R.A.D. Practice): "can we add slide mode to teacher access in addition
@@ -1248,6 +1401,8 @@ const app = {
     next.disabled = last && !asking;
     next.textContent = asking ? '👀 Show Answer' : last ? '🏁 Last slide' : 'Next ▶';
     document.getElementById('sl-back').disabled = S.at === 0;
+    document.getElementById('sl-prev').disabled = S.at === 0;
+    document.getElementById('sl-fwd').disabled = S.at + 1 >= S.list.length;
     // A new slide starts at the top; Show Answer brings the answer into view
     const answer = S.shown && body.querySelector('.sl-answer');
     if (!answer) window.scrollTo(0, 0);
@@ -1341,12 +1496,11 @@ const app = {
     this._slides = null;
     document.getElementById('sl-body').innerHTML = '';
     document.body.classList.remove('slides-active');
-    this.exitReviewMode();
+    this.openTeacher();
   },
 
   exitReviewMode() {
     reviewMode    = false;
-    reviewAutoRun = false;
     this._reviewLevel = null;
     this.stopTimerEngine();
     const banner = document.getElementById('review-mode-banner');
@@ -1381,9 +1535,7 @@ const app = {
     if (banner) {
       banner.classList.toggle('hidden', !reviewMode);
       const label = banner.querySelector('span');
-      if (label) label.textContent = reviewAutoRun
-        ? '🔍 Teacher Review Mode — auto-run'
-        : '🔍 Teacher Review Mode — tap Next to advance';
+      if (label) label.textContent = '🔍 Teacher Review Mode — tap Next to advance';
     }
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(AWOC_SESSION_ID_KEY);
@@ -1400,8 +1552,9 @@ const app = {
     this.sessionBase = SESSION_ID;
     // A redo gets the next version's sentences (try 1 → version 1, try 2 → version 2 …, then round again).
     // Teacher Access picks its version.
+    const teachVersion = this._teachVersion; this._teachVersion = null;   // Try it as a student: the version picked
     this.version = reviewMode ? (this._reviewVersion || 1)
-      : ((this.currentAttemptNum - 1) % versionCount(section, level)) + 1;
+      : teachVersion || ((this.currentAttemptNum - 1) % versionCount(section, level)) + 1;
 
     // Each choice keeps its own note when the choices are shuffled. Click-a-sentence
     // choices keep passage order.
@@ -1718,11 +1871,7 @@ const app = {
 
     if (reviewMode) {
       bar.classList.add('hidden');
-      if (reviewAutoRun) {
-        setTimeout(() => this.nextQuestion(), 800);
-      } else {
-        document.getElementById('next-btn').classList.remove('hidden');
-      }
+      document.getElementById('next-btn').classList.remove('hidden');
       return;
     }
 
@@ -1799,6 +1948,7 @@ const app = {
     clearTimeout(this._cardUnlock);
     clearTimeout(this._cardSpeak);
     clearTimeout(this._cardPause);
+    if (TEACH) this._teachSync();
     const c   = this._cards[this._cardAt];
     const box = document.getElementById('learn-card');
     const last = this._cardAt + 1 >= this._cards.length;
@@ -1822,7 +1972,7 @@ const app = {
     window.scrollTo(0, 0);
     this._cardLast = last;
     this.saveProgress();
-    if (reviewMode) { this._openCardNext(); if (reviewAutoRun) setTimeout(() => this.nextCard(), 500); return; }
+    if (reviewMode) { this._openCardNext(); return; }
     // The button opens when the voice finishes the card. Only a device with NO voice (nothing started within
     // 4 s) gets it after a wait long enough to read the card: the reading-time timer used to run even while the
     // voice was still reading, and opened Next before the last lines of a long card were heard (found 10/28).
@@ -1916,6 +2066,7 @@ const app = {
   renderQuestion() {
     if (this._needsCards()) { this._showCards(); return; }
     this._leaveCards();
+    if (TEACH) this._teachSync();
     const q      = this.currentBank[this.currentIndex];
     const total  = this.currentBank.length;
 
@@ -2457,14 +2608,16 @@ const app = {
     }));
     buttons.forEach(b => { b.disabled = true; b.style.opacity = '0.4'; });
     let remaining = secs;
+    this._scoreUnlock = () => {
+      clearInterval(iv);
+      this._scoreUnlock = null;
+      bar.classList.add('hidden');
+      buttons.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+    };
     const iv = setInterval(() => {
       remaining--;
       count.textContent = remaining;
-      if (remaining <= 0) {
-        clearInterval(iv);
-        bar.classList.add('hidden');
-        buttons.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
-      }
+      if (remaining <= 0) this._scoreUnlock();
     }, 1000);
   },
 
