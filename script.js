@@ -696,12 +696,15 @@ function lightAt(spans, text, charIndex) {
 function spokenOf(spans) {
   return spans.map((s, i) => {
     let t = (s.textContent + (s.dataset && s.dataset.tail && !/[.!?,;:]$/.test(s.textContent) ? s.dataset.tail : '')).replace(/[…]/g, '').replace(/_{2,}/g, 'blank');
-    // a letter in a letter box is said as its name, with no stop between letters: "the letters L Y", not
-    // "the letters l, y" (Marcos 10/28: "the saying of ly sounds strange")
+    // the letters in a letter box are spelled the way QPS spells "tch": capitals joined by hyphens, one word —
+    // "L-Y", "E-D" (Marcos 10/28: "the saying of ly sounds strange" · "tch dge qu are all spelled correctly by
+    // the computer"). The box's first span says it all; the others say nothing, so each span keeps its own token
+    // and the highlight still lines up.
     const ltrs = s.closest && s.closest('.pos-ltrs');
     if (ltrs) {
-      t = t.replace(/^[a-z]/i, c => c.toUpperCase());
-      if (spans[i + 1] && spans[i + 1].closest('.pos-ltrs') === ltrs) t = t.replace(/,$/, '');   // "L Y", not "L, Y"
+      const box = spans.filter(x => x.closest('.pos-ltrs') === ltrs), last = box[box.length - 1];
+      const after = last.dataset && last.dataset.tail && !/[.!?,;:]$/.test(last.textContent) ? last.dataset.tail : '';
+      t = box[0] === s ? box.map(x => x.textContent.replace(/[^a-z]/gi, '')).join('').toUpperCase().split('').join('-') + after : '';
     }
     // a word in a box (an example tile) is said on its own with a stop after it — "Dad. Library. Pencil." —
     // not run into the next box like a sentence (Marcos 10/28: "It should not sound like a sentence")
