@@ -1246,3 +1246,14 @@ body.teach-on { padding-bottom: 64px; }
 #teach-jump { font: inherit; font-weight: 400; max-width: 260px; min-width: 0; padding: 4px 6px; border-radius: 8px; border: 1px solid #d4a106; background: #fff; color: #5c4703; }
 .teach-bar button:disabled, .sl-step:disabled { opacity: 0.4; cursor: default; }
 .sl-step { background: #fff; border: 1px solid #d4b106; border-radius: 8px; padding: 4px 10px; font: inherit; font-weight: 700; color: #5c4703; cursor: pointer; }
+
+/* A reading stopped early (Marcos 10/30): the line saying what to do has its own 🔊, and the 🔊 to tap pulses */
+.lc-stopped .rp-speak { margin-right: 8px; vertical-align: middle; }
+@keyframes lc-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(142, 68, 173, 0.55); }
+  50%      { box-shadow: 0 0 0 12px rgba(142, 68, 173, 0); }
+}
+.speak-btn.lc-pulse { animation: lc-pulse 2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .speak-btn.lc-pulse { animation: none; box-shadow: 0 0 0 4px rgba(142, 68, 173, 0.45); }
+}
