@@ -1264,7 +1264,7 @@ const app = {
 
   teacherSlides() {
     const t = this._teacherPick();
-    this.openSlides(t.section, t.level, t.version);
+    this.openSlides(t.section, t.level);
   },
 
   /* ✅ Answer key: every question of the stage and version, the right answer marked, and why */
@@ -1386,28 +1386,20 @@ const app = {
 
   /* ── SLIDE MODE (Teacher Access) ──
      Marcos 10/19 (R.A.D. Practice): "can we add slide mode to teacher access in addition
-     to review mode". The level as big slides for the board, in teaching order: the lesson
-     cards, then each passage and its questions (the passage stays on the left). The
-     answer stays hidden until Show Answer. Next / Back, the arrow keys and a clicker's
-     Page Down / Page Up, and a jump list. Nothing is timed, scored, saved or sent. */
-  openSlides(section, level, version) {
+     to review mode". The stage's lesson cards as big slides, in teaching order. TEACHING ONLY (Marcos 10/30,
+     "make that the standard moving forward"): never the questions — a child's try N gets version N's questions, so
+     showing them on the board gave away the answers. For calling a kid up to the desk or the board with the real
+     lesson to refer to. Next / Back, the arrow keys and a clicker's Page Down / Page Up, and a jump list. Nothing is
+     timed, scored, saved or sent. */
+  openSlides(section, level) {
     const act = ACTIVITIES[section];
-    const list = [];
-    (stageData(section, level).cards || []).forEach((card, i) => list.push({ kind: 'card', card, label: `📘 Lesson card ${i + 1}: ${card.title}` }));
-    const bank = sectionBank(section, level, version || 1);
-    bank.forEach((q, k) => {
-      // The data lists the right choice first, so the slides mix them once here (word taps keep sentence order)
-      const order = q.choices.map((_, i) => i);
-      if (!q.fixed) shuffle(order);
-      const where = `Question ${k + 1} of ${bank.length}`;
-      list.push({ kind: 'q', q, order, where, label: `❓ ${where}` });
-    });
-    this._slides = { section, level, version: version || 1, list, at: 0, shown: false };
+    const list = (stageData(section, level).cards || []).map((card, i) => ({ kind: 'card', card, label: `📘 Lesson card ${i + 1}: ${card.title}` }));
+    this._slides = { section, level, list, at: 0, shown: false };
     this.show('slide-screen');
     document.body.classList.add('slides-active');
     const jump = document.getElementById('sl-jump');
     jump.innerHTML = list.map((s, i) => `<option value="${i}">${i + 1}. ${escapeHtml(s.label)}</option>`).join('');
-    document.getElementById('sl-title').textContent = `🖥️ Slide Mode · ${act.short} · ${levelLabel(level, version || 1)}`;
+    document.getElementById('sl-title').textContent = `🖥️ Slide Mode · ${act.short} · ${stageName(level)}`;
     this._renderSlide();
   },
 
@@ -1418,17 +1410,12 @@ const app = {
     document.getElementById('sl-count').textContent = `Slide ${S.at + 1} of ${S.list.length}`;
     document.getElementById('sl-jump').value = String(S.at);
     const body = document.getElementById('sl-body');
-    if (s.kind === 'card') {
-      body.innerHTML = `<h2 class="sl-h rp-say">${escapeHtml(s.card.title)}</h2>` +
-        `<div class="lc-blocks">${s.card.blocks.map(b => this._cardBlockHTML(b)).join('')}</div>`;
-    } else {
-      body.innerHTML = `<div class="sl-main">${this._slideQuestionHTML(s)}</div>`;
-    }
+    body.innerHTML = `<h2 class="sl-h rp-say">${escapeHtml(s.card.title)}</h2>` +
+      `<div class="lc-blocks">${s.card.blocks.map(b => this._cardBlockHTML(b)).join('')}</div>`;
     const last = S.at + 1 >= S.list.length;
-    const asking = s.kind === 'q' && !S.shown;
     const next = document.getElementById('sl-next');
-    next.disabled = last && !asking;
-    next.textContent = asking ? '👀 Show Answer' : last ? '🏁 Last slide' : 'Next ▶';
+    next.disabled = last;
+    next.textContent = last ? '🏁 Last slide' : 'Next ▶';
     document.getElementById('sl-back').disabled = S.at === 0;
     document.getElementById('sl-prev').disabled = S.at === 0;
     document.getElementById('sl-fwd').disabled = S.at + 1 >= S.list.length;
@@ -1476,31 +1463,9 @@ const app = {
     S.fitAt = S.at; S.fitZoom = z; S.fitStory = scroll ? scroll.style.maxHeight : '';
   },
 
-  /* One question: the question, the sentence, the choices — and, after Show Answer, the right
-     choice (or the right words) in green and why (as the student sees it) */
-  _slideQuestionHTML(s) {
-    const q = s.q;
-    const open = this._slides.shown;
-    const blocks = [`<p class="sl-where">${escapeHtml(s.where)}</p>`];
-    blocks.push(sayBlockHTML('sl-qblock', escapeHtml(q.q)));
-    blocks.push(this._showHTML(q, { answered: open, section: this._slides.section }));
-    if (q.type !== 'tap') {
-      const choices = s.order.map((i, pos) => {
-        const right = i === q.answer;
-        const face = `<strong>${pos + 1}.</strong>&nbsp;<span class="choice-text">${choiceHtml(escapeHtml(q.choices[i]))}</span>`;
-        return `<div class="sl-choice-row">${SPEAK_HTML.replace('speakBlock(this)', 'speakEl(this, this.nextElementSibling.querySelector(\'.choice-text\'))')}` +
-          `<div class="sl-choice${open && right ? ' sl-right' : ''}" data-orig="${i}">${face}${open && right ? ' <span class="sl-tick" data-noread>✅</span>' : ''}</div></div>`;
-      }).join('');
-      blocks.push(`<div class="sl-choices">${choices}</div>`);
-    }
-    if (open) blocks.push(`<div class="sl-answer">${this._answerHTML(q, true, null)}</div>`);
-    return blocks.join('');
-  },
-
   slideNext() {
     const S = this._slides;
     if (!S) return;
-    if (S.list[S.at].kind === 'q' && !S.shown) { S.shown = true; this._renderSlide(); return; }
     if (S.at + 1 >= S.list.length) return;
     S.at += 1; S.shown = false;
     this._renderSlide();
