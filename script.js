@@ -93,14 +93,36 @@ function attemptSessionId() {
 }
 
 /* Teacher Access never sends a row (Marcos 10/19: "teacher mode allows me to preview the site") */
-function submitScorePartial() {
+/* ONE ROW AT A TIME, IN ORDER (copied from vocab-practice's sendRow, 11/13; here 11/21 with the row at every question).
+   The sheet writes over the try's row with no lock, so a slow in-progress row could land after the finished one and turn
+   "Complete" back into In Progress. Each row leaves when the one before it was answered (or after SEND_WAIT_MS); an
+   in-progress row still waiting is replaced by the newer one, and the finished row drops it. */
+const SEND_WAIT_MS = 20000;
+let sheetLine = Promise.resolve();
+let rowWaiting = null;   // an in-progress row made but not sent yet
+function sendRow(body) {
+  const text = JSON.stringify(body);
+  if (rowWaiting && !body.done) { rowWaiting.text = text; return rowWaiting.sent; }
+  if (rowWaiting) { rowWaiting.text = null; rowWaiting = null; }
+  const row = { text };
+  const go = () => {
+    if (rowWaiting === row) rowWaiting = null;
+    if (row.text == null) return;
+    return fetch(SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: row.text }).catch(() => {});
+  };
+  row.sent = sheetLine.then(go);
+  if (!body.done) rowWaiting = row;
+  sheetLine = Promise.race([row.sent, new Promise(r => setTimeout(r, SEND_WAIT_MS))]);
+  return row.sent;
+}
+
+// 📍 Right Now (Marcos 11/21: "Yes, add it"): a row at EVERY question (was every 5th) and on the lesson cards; its copy of
+// the log ends with where the student is ({ e:'on', q, of }, + cards: true on the cards) — never in app.events.
+function submitScorePartial(onCards) {
   if (reviewMode) return;
   const pct = app.currentBank.length
     ? Math.round((app.score / app.currentBank.length) * 100) : 0;
-  fetch(SHEET_URL, {
-    method: 'POST', mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+  sendRow({
       action:         'submit',
       game:           gameKey(app.currentSection, app.level || 1),
       sessionId:      attemptSessionId(),
@@ -117,20 +139,16 @@ function submitScorePartial() {
       wrongQuestions: (app.missedQuestions||[]).map(missEntry).join(' | '),
       startedAt:      app.startedAt || '',
       finishedAt:     app.finishedAt || '',
-      events:         JSON.stringify(app.events || []),
+      events:         JSON.stringify([...(app.events || []), { e: 'on', q: app.currentIndex + 1, of: app.currentBank.length, ...(onCards ? { cards: true } : {}) }]),
       timestamp:      new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })
-    })
-  }).catch(() => {});
+  });
 }
 
 function submitScoreFinal() {
   if (reviewMode) return;
   const pct = app.currentBank.length
     ? Math.round((app.score / app.currentBank.length) * 100) : 0;
-  fetch(SHEET_URL, {
-    method: 'POST', mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+  sendRow({
       action:         'submit',
       game:           gameKey(app.currentSection, app.level || 1),
       sessionId:      attemptSessionId(),
@@ -152,8 +170,7 @@ function submitScoreFinal() {
       finishedAt:     app.finishedAt || '',
       events:         JSON.stringify(app.events || []),
       timestamp:      new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })
-    })
-  }).catch(() => {});
+  });
 }
 
 /* ── ROSTER ─────────────────────────────────────────── */
@@ -1914,6 +1931,7 @@ const app = {
     this._cardAt = 0;
     this.questionLocked = false;   // a save during the cards must not skip the first question
     document.getElementById('quiz-screen').classList.add('card-mode');
+    submitScorePartial(true);   // 📍 Right Now (11/21): on the dashboard as "📖 Lesson cards" the moment a try starts
     this._applyCompLayout(false);
     ['q-before', 'q-show', 'q-after'].forEach(id => { document.getElementById(id).innerHTML = ''; });   // nothing left from the last screen
     this._renderCard();
@@ -2142,9 +2160,7 @@ const app = {
       });
     }
 
-    if (this.currentIndex > 0 && this.currentIndex % 5 === 0) {
-      submitScorePartial();
-    }
+    submitScorePartial();   // 📍 Right Now (11/21): a row at every question, the first one too
 
     this.saveProgress();
 
@@ -2356,6 +2372,8 @@ const app = {
       this.streak = 0;
       this.missedQuestions.push({ id: q.id, n: this.currentIndex + 1, q: missText(q), skill: q.skill, yourAnswer: picked, correct: rightText });
     }
+    // 📍 Right Now on the dashboard (Marcos 11/21: "Yes, add it"): every answer rides in the log, right or missed
+    logEvent('answer', { id: q.id, ok: correct });
 
     if (q.type === 'tap') {
       document.querySelectorAll('#q-show .pos-tok').forEach(el => {
